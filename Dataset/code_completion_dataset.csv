@@ -1,0 +1,4534 @@
+prefix,suffix,middle
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)","if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES","# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")",")
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()","outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)","T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference","model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(","model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt","MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))","for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()","mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms","# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters","os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/"""
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():","for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)","images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed","if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","# save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)","# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):","mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),","dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt","OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth"""
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3","# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]
+            # maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png""
+            mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)"
+"import os
+import torch
+from PIL import Image
+from torch.utils.data import DataLoader
+from torchvision import transforms as T
+from utils import MicroscopyDataset
+import segmentation_models_pytorch as smp
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_PATH = ""models/unet_model.pth""
+OUTPUT_DIR = ""data/generated_masks/""
+
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# transforms
+transform = T.Compose([
+    T.Resize((256, 256)),
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+])
+
+# dataset (without masks this time)
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir=None, transform=transform)
+
+# data Loader
+loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=None,  # No need for encoder weights during inference
+    in_channels=3,
+    classes=NUM_CLASSES
+)
+
+model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+model = model.to(DEVICE)
+model.eval()
+
+# inference
+with torch.no_grad():
+    for idx, (images, _) in enumerate(loader):
+        images = images.to(DEVICE)
+        outputs = model(images)
+        preds = torch.argmax(outputs, dim=1).cpu().numpy()
+
+        for i in range(preds.shape[0]):
+            mask = preds[i]","mask_image.save(os.path.join(OUTPUT_DIR, mask_filename))
+
+        if (idx + 1) % 10 == 0:
+            print(f""Processed {idx * BATCH_SIZE + BATCH_SIZE} / {len(dataset)} images."")
+
+print(""Mask generation completed."")","# maybe resize mask back to original image size if needed
+            # save mask as PNG (btw need ensure that mask pixel values correspond to class indices)
+            mask_image = Image.fromarray(mask.astype(np.uint8))
+            image_id = dataset.image_ids[idx * BATCH_SIZE + i]
+            mask_filename = os.path.splitext(image_id)[0] + ""_generated_mask.png"""
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))","for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","return ious
+
+
+# training Loop
+best_val_loss = float('inf')"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):","target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)","val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls","ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)","ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []","intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters","VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)","iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):","optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)","with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","# validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)","train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np","EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)","if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer","# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)","val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()"
+"import os
+import torch
+import torch.nn as nn","import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls","else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms","# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES","# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious
+
+
+# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")",")
+
+model = model.to(DEVICE)
+
+# loss and optimizer"
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+# model itself
+# we can choose a pre-trained encoder, 'resnet34' for example
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+# loss and optimizer
+# gonna use CrossEntropyLoss for multiclass segmentation
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation","# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np","self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading","else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])","mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np","self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)","if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","# mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np","self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform","else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))","self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir","self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input","mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir","self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)","if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input","# mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)","if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))","mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)","if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T","self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:","def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","self.has_masks = False
+
+    def __len__(self):
+        return len(self.image_ids)"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False
+
+    def __len__(self):","image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","return len(self.image_ids)
+
+    def __getitem__(self, idx):
+        # loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])"
+"import os
+from PIL import Image
+import torch
+from torch.utils.data import Dataset, DataLoader
+import torchvision.transforms as T
+import numpy as np
+
+
+class MicroscopyDataset(Dataset):
+    def __init__(self, images_dir, masks_dir=None, transform=None):
+        self.images_dir = images_dir
+        self.masks_dir = masks_dir
+        self.transform = transform
+        self.image_ids = sorted(os.listdir(images_dir))
+
+        if masks_dir:
+            self.mask_ids = sorted(os.listdir(masks_dir))
+            self.has_masks = True
+        else:
+            self.has_masks = False","# loading image
+        img_path = os.path.join(self.images_dir, self.image_ids[idx])
+        image = Image.open(img_path).convert(""RGB"")  # Assuming 3-channel input
+
+        if self.has_masks:
+            # mask loading
+            mask_path = os.path.join(self.masks_dir, self.image_ids[idx].replace('.png', '_mask.png'))
+            mask = Image.open(mask_path)
+            mask = np.array(mask)
+            # mask pixel values are class indices (0,1,2,etc.)
+            mask = torch.from_numpy(mask).long()
+        else:
+            mask = torch.zeros((1,), dtype=torch.long)  # just placeholder
+
+        if self.transform:
+            image = self.transform(image)
+            if self.has_masks:
+                # for masks, and no augmentation except converting to tensor
+                pass
+
+        return image, mask","def __len__(self):
+        return len(self.image_ids)
+
+    def __getitem__(self, idx):"
