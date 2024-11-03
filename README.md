@@ -57,14 +57,14 @@ To sum up, metrics like Cosine Similarity, Error Count and ROUGE/BLEU showed bet
 - **Evaluation Metrics Diversity**:
   - Relying solely on one metric can be kind of misleading, but a combination of metrics provides a better view of model performance.
   - I learned a lot about strengths and limitations of each metric and liked the idea of using embeddings for robust code scoring and analyzing..
-  - Structural similarity seemed like very nice score, but it failed dut to the problems that code completions might be partial and libs like ast often fail.
+  - Structural similarity seemed like very nice score, but it failed due to the problems that code completions might be partial and libs like ast often fail.
 - **Automation Tools and Libraries**:
   - I tried and worked with Transformers and BitsAndBytesConfig libs that was new for me, and evaluation tools such as Levenshtein, sacrebleu, and libs for NLP, Blue and Rouge - all of it really streamlines further the development and evaluation process.
   - I integrated Rich lib for a fancy console outputs that improved the user experience during manual evaluations, It was a bit complex, but after all seemed similar to C# specter console lib.
 
 ## Conclusion
 
-So, let's conclude that based on the performed comprehensive evaluation, the `starcoder2-15b` model, with a composite score of 0.4162, outperformed its counterparts across most metrics. It achieved the highest BLEU score (0.2559), ROUGE score (0.3881), and Cosine Similarity (0.6217), while maintaining a relatively low Levenshtein Distance (0.5113) and Cyclomatic Complexity (1.0). **We can say that these results indicate that the larger `starcoder2-15b` model is more adept at generating coherent, semantically accurate, and maintainable code completions.**
+Overall, based on a comprehensive evaluation, the `starcoder2-15b` model, with a composite score of 0.4162, outperformed its counterparts across most metrics. It achieved the highest BLEU score (0.2559), ROUGE score (0.3881), and Cosine Similarity (0.6217), while maintaining a relatively low Levenshtein Distance (0.5113) and Cyclomatic Complexity (1.0). **We can say that these results indicate that the larger `starcoder2-15b` model is more adept at generating coherent, semantically accurate, and maintainable code completions.**
 
 _P.S. While we are mostly talking about results from function completion as they intend to be more robust for overall scoring, same reasoning and same results might be deduced from multiline completions as well._
 
