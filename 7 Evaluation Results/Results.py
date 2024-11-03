@@ -25,21 +25,15 @@ metrics = [
     'Levenshtein',
     'Cyclomatic_Complexity',
     'Cyclomatic_Complexity_Diff',
-    'Exact_Match',
-    'BLEU',
-    'ROUGE',
     'Cosine_Similarity'
 ]
 
 # weights for each metric
 weights = {
-    'Levenshtein': 0.15,
-    'Cyclomatic_Complexity': 0.10,
-    'Cyclomatic_Complexity_Diff': 0.10,
-    'Exact_Match': 0.20,
-    'BLEU': 0.15,
-    'ROUGE': 0.15,
-    'Cosine_Similarity': 0.15
+    'Levenshtein': 0.30,
+    'Cyclomatic_Complexity': 0.15,
+    'Cyclomatic_Complexity_Diff': 0.15,
+    'Cosine_Similarity': 0.40
 }
 
 results = {}

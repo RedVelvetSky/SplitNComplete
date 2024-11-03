@@ -27,21 +27,22 @@ This step was pivotal in establishing a reliable benchmark for other metrics (ev
 To quantify the model's performance, I proposed and implemented several automatic metrics:
 
 - **Exact Match**: Just simply checks if the generated code exactly matches the expected code.
-- **BLEU Score**: Measures the n-gram overlap between the generated and reference code.
-- **ROUGE Score**: Assesses the overlap of n-grams, focusing on recall (nice correlation).
+- **BLEU and ROUGE Score**: Might give us surface-level insights about generated and reference code.
 - **Levenshtein Distance**: Calculates the minimum number of single-character edits required to change one word into the other (length alone was not a consistent predictor of quality).
 - **Cyclomatic Complexity**: Analyzes the complexity of the generated code.
 - **Cosine Similarity**: Evaluates the semantic similarity between the original and generated code embeddings (I noticed high correlation with manual evaluations).
 
+P.S. BLEU and ROUGE are not applicable to code directly, however they might provide surface-level insights, but lacking depth in syntax and functionality.
+
 ![Similarity Scores](./Media/CosineSimilarity.png)
 
-To sum up, metrics like Cosine Similarity, Error Count and ROUGE/BLEU showed better alignment with human judgments, I suppose that might indicate their effectiveness in code evaluation tasks.
+To sum up, metrics like Cosine Similarity, Error Count and Similarity Length Ratio showed better alignment with human judgments, I suppose that might indicate their effectiveness in code evaluation tasks.
 
 ## A few notes about findings
 
 - **Model Performance**:
   - **Exact Match Limitation**: Exact Match is a very strange metric, it often penalizes minor yet widely acceptable variations in code structure or variable naming.
-  - **BLEU and ROUGE Correlation**: These metrics demonstrated a pretty positive correlation with my manual evaluations.
+  - **BLEU and ROUGE Correlation**: These metrics demonstrated not very positive correlation with my manual evaluations, probably due to the lacking depth in syntax related to code.
   - **Cyclomatic Complexity Insights**: Generated code occasionally exhibited higher complexity, it might open potential areas for optimization.
   - **Similarity Score and Error Count** were rather a reliable automatic metrics, exhibiting strong correlations with manual evaluations.
 - **Dataset Quality**:
@@ -64,7 +65,7 @@ To sum up, metrics like Cosine Similarity, Error Count and ROUGE/BLEU showed bet
 
 ## Conclusion
 
-Overall, based on a comprehensive evaluation, the `starcoder2-15b` model, with a composite score of 0.4162, outperformed its counterparts across most metrics. It achieved the highest BLEU score (0.2559), ROUGE score (0.3881), and Cosine Similarity (0.6217), while maintaining a relatively low Levenshtein Distance (0.5113) and Cyclomatic Complexity (1.0). **We can say that these results indicate that the larger `starcoder2-15b` model is more adept at generating coherent, semantically accurate, and maintainable code completions.**
+Overall, based on a comprehensive evaluation, the `starcoder2-15b` model, with a composite score of 0.4162, outperformed its counterparts across most metrics. It achieved the highest Similarity Length (0.73), Readability (3.5/5) and Cosine Similarity (0.6217), while maintaining a relatively low Levenshtein Distance (0.5113) and Cyclomatic Complexity (1.0). **We can say that these results indicate that the larger `starcoder2-15b` model is more adept at generating coherent, semantically accurate, and maintainable code completions.**
 
 _P.S. While we are mostly talking about results from function completion as they intend to be more robust for overall scoring, same reasoning and same results might be deduced from multiline completions as well._
 
@@ -83,12 +84,12 @@ However, the computational demands of `starcoder2-15b` may be a consideration fo
 
 ### Comparison with Other Models:
 
-| Model               | Composite Score | BLEU    | ROUGE   | Cosine Similarity | Eval Score | Error Count | Notes                                                                                                                                   |
-|---------------------|-----------------|---------|---------|-------------------|------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------|
-| `starcoder2-15b`    | **0.4162**      | **0.2559** | **0.3881** | **0.6217**         | **0.85**       | **1.0**         | Highest performance across metrics; ideal for high-accuracy applications.                                                               |
-| `starcoder2-7b`     | 0.37            | 0.1563  | 0.2514  | 0.4214            | 0.75       | 3.0         | Strong performance, slightly lower than `starcoder2-15b`, with really lower computational cost.                                         |
-| `starcoder2-3b`     | 0.3473          | 0.0621  | 0.1388  | 0.3031            | 0.5        | 3.0         | Moderate capabilities; suitable for less demanding applications.                                                                        |
-| `tiny_starcoder_py` | 0.2583          | 0.0134  | 0.0765  | 0.2781            | 0.1        | 5.0         | Limited effectiveness; best suited for some kind of lightweight tasks where minimal resource usage is prioritized over qualited output. |
+| Model               | Composite Score | Similarity Length | Readability | Cosine Similarity | Eval Score | Error Count | Notes                                                                                                                                   |
+|---------------------|-----------------|-------------------|-------------|-------------------|------------|-------------|-----------------------------------------------------------------------------------------------------------------------------------------|
+| `starcoder2-15b`    | **0.4162**      | **0.73**          | **3.5/5**   | **0.6217**         | **0.85**       | **1.0**         | Highest performance across metrics; ideal for high-accuracy applications.                                                               |
+| `starcoder2-7b`     | 0.37            | 0.625             | 3/5         | 0.4214            | 0.75       | 3.0         | Strong performance, slightly lower than `starcoder2-15b`, with really lower computational cost.                                         |
+| `starcoder2-3b`     | 0.3473          | 0.61              | 3.4/5       | 0.3031            | 0.5        | 3.0         | Moderate capabilities; suitable for less demanding applications.                                                                        |
+| `tiny_starcoder_py` | 0.2583          | 0.17            | 2.4/5       | 0.2781            | 0.1        | 5.0         | Limited effectiveness; best suited for some kind of lightweight tasks where minimal resource usage is prioritized over qualited output. |
 
 
 While `starcoder2-15b` seems to excel across almost all metrics, `starcoder2-7b` presents a nice alternative where it balances performance with computational resources. However `starcoder2-3b` and `tiny_starcoder_py` offer progressively lighter solutions, that might be suitable for much more simpler tasks or constrained environments.
