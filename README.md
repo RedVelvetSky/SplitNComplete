@@ -32,7 +32,7 @@ To quantify the model's performance, I proposed and implemented several automati
 - **Cyclomatic Complexity**: Analyzes the complexity of the generated code.
 - **Cosine Similarity**: Evaluates the semantic similarity between the original and generated code embeddings (I noticed high correlation with manual evaluations).
 
-P.S. BLEU and ROUGE are not applicable to code directly, however they might provide surface-level insights, but lacking depth in syntax and functionality.
+_P.S. BLEU and ROUGE are not applicable to code directly, however they might provide surface-level insights, but lacking depth in syntax and functionality._
 
 ![Similarity Scores](./Media/CosineSimilarity.png)
 
