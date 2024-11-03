@@ -38,8 +38,6 @@ train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
 train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
 valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
 
-# model itself
-# we can choose a pre-trained encoder, 'resnet34' for example
 model = smp.Unet(
     encoder_name="resnet34",
     encoder_weights="imagenet",  # pre-trained weights
@@ -49,8 +47,6 @@ model = smp.Unet(
 
 model = model.to(DEVICE)
 
-# loss and optimizer
-# gonna use CrossEntropyLoss for multiclass segmentation
 loss_fn = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
 

@@ -1,0 +1,2528 @@
+prefix,suffix,middle,filename,gen_tiny_starcoder_py,gen_starcoder2_3b,gen_starcoder2_7b,gen_starcoder2_15b,eval_score_gen_tiny_starcoder_py,eval_diff_gen_tiny_starcoder_py,similarity_length_ratio_gen_tiny_starcoder_py,error_count_gen_tiny_starcoder_py,eval_score_gen_starcoder2_3b,eval_diff_gen_starcoder2_3b,similarity_length_ratio_gen_starcoder2_3b,error_count_gen_starcoder2_3b,eval_score_gen_starcoder2_7b,eval_diff_gen_starcoder2_7b,similarity_length_ratio_gen_starcoder2_7b,error_count_gen_starcoder2_7b,eval_score_gen_starcoder2_15b,eval_diff_gen_starcoder2_15b,similarity_length_ratio_gen_starcoder2_15b,error_count_gen_starcoder2_15b
+"import keras
+from keras.datasets import reuters
+from keras import models
+from keras import layers
+from keras.utils import to_categorical
+import numpy as np
+import matplotlib.pyplot as plt","def vectorize_sequences(sequences, dimension=10000):
+    results = np.zeros((len(sequences), dimension))
+    for i, sequence in enumerate(sequences):
+        results[i, sequence] = 1.
+    return results
+
+def decode_input_data(train_data):
+    word_index = reuters.get_word_index()
+    reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
+    # Note that our indices were offset by 3
+    # because 0, 1 and 2 are reserved indices for ""padding"", ""start of sequence"", and ""unknown"".
+    decoded_newswire = ' '.join([reverse_word_index.get(i - 3, '?') for i in train_data[0]])
+    print(decoded_newswire)
+
+def create_and_train_network(input, index):
+    (train,train_labels,_,_) = input
+
+    # specify the shape of the network
+    model = models.Sequential()
+    model.add(layers.Dropout(0.2))
+    model.add(layers.Dense(128, activation='silu', input_shape=(10000,)))
+    model.add(layers.Dense(46, activation='softmax'))
+
+    # split input data into training set and validation set
+    val_data = train[:1000]
+    train_data = train[1000:]
+
+    val_labels = train_labels[:1000]
+    train_labels = train_labels[1000:]
+
+    cos_dec = keras.optimizers.schedules.CosineDecay(
+        0.0001,
+        len(train) * 25,
+    )
+
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=cos_dec), 
+                loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
+                metrics=['accuracy'])
+    
+    checkpoint_filepath = f'checkpoint_mode_{index + 1}.keras'
+    model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=True)
+
+    # train the network
+    history = model.fit(train_data,
+                        train_labels,
+                        epochs=30,
+                        batch_size=32,
+                        validation_data=(val_data, val_labels),
+                        callbacks=[model_checkpoint_callback])
+    
+    return (history,model)
+
+
+
+def print_graphs(history):
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(1, len(loss) + 1)
+
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()
+
+    plt.clf()   # clear figure
+
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()
+
+
+if __name__ == ""__main__"":
+    input = create_testing_data()
+    (train,train_labels,_,_) = input
+    val_data = train[:1000]
+    val_labels = train_labels[:1000]
+
+    models_l = []
+
+    for i in range(3):
+        model = keras.models.load_model(f'checkpoint_mode_{i + 1}.keras')
+        model.fit(train, train_labels)
+        models_l.append(model)
+
+    ensemble_input = keras.layers.Input(shape=(10000,))
+    outputs = [model(ensemble_input) for model in models_l]
+    ensemble_output = keras.layers.Average()(outputs)
+
+    ensemble = keras.Model(inputs=ensemble_input, outputs=ensemble_output)
+    ensemble.compile(loss=keras.losses.CategoricalCrossentropy(),
+                     metrics=['accuracy'])
+    
+    print(""Dev accuracy: "")
+    acc = ensemble.evaluate(val_data, val_labels)","def create_testing_data():
+    (train_data, train_labels), (test_data, test_labels) = reuters.load_data(num_words=10000)
+
+    train = vectorize_sequences(train_data)
+    test = vectorize_sequences(test_data)
+    one_hot_train_labels = to_categorical(train_labels)
+    one_hot_test_labels = to_categorical(test_labels)
+
+    return (train, one_hot_train_labels, test, one_hot_test_labels)",ClassificationReutersDataset.py,"import pandas as pd
+import os
+import random
+import time
+import math
+import pickle
+import sys
+sys.path.insert(0,'../')
+from utils import load_dataset, get_test_set, get_training_set, get_validation_set
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import KFold
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import GaussianNB
+from sklearn.neural_",,"# load dataset
+def create_testing_data():
+    (train_data, train_labels), (_, _) = reuters.load_data(num_words=10000)
+    test_data = train_data[:1900]
+    partial_test_data = train_data[1900:]
+    test_labels = train_labels[:1900]
+    partial_test_labels = train_labels[1900:]
+
+    x_val = partial_test_data
+    y_val = partial_test_labels
+
+    # Vectorizing the data","# %matplotlib inline
+
+def create_testing_data():
+    (train, train_labels),(test, test_labels) = reuters.load_data(num_words=10000)
+    x_train = vectorize_sequences(train)
+    y_train = to_categorical(train_labels)
+    x_test = vectorize_sequences(test)
+    y_test = to_categorical(test_labels)
+    return ((x_train,y_train,(x_test,y_test)),decode_input_data(train))",10.0,"The generated code imports various libraries and modules, which are not present in the original code. The original code focuses on creating testing data from the Reuters dataset, while the generated code seems to be setting up for a machine learning task with classifiers. The original code uses functions like 'vectorize_sequences' and 'to_categorical', which are not mentioned in the generated code. The generated code is incomplete and ends abruptly with 'neural_'.",0.1,5.0,,No generated code.,,,45.0,"The generated code does not return the test data and labels in the same way as the original code. It splits the training data into a validation set and does not include the vectorization of sequences or the conversion to categorical labels. The original code uses 'vectorize_sequences' and 'to_categorical' functions, which are missing in the generated code. Additionally, the generated code has an indentation error in the comment for vectorizing the data.",0.5,3.0,75.0,"The generated code uses 'train' and 'test' instead of 'train_data' and 'test_data'. It also introduces 'decode_input_data(train)' in the return statement, which is not present in the original code. The original code returns a tuple of four elements, while the generated code returns a tuple of three elements and an additional function call.",0.85,1.0
+"import keras
+from keras.datasets import reuters
+from keras import models
+from keras import layers
+from keras.utils import to_categorical
+import numpy as np
+import matplotlib.pyplot as plt
+
+def create_testing_data():
+    (train_data, train_labels), (test_data, test_labels) = reuters.load_data(num_words=10000)
+
+    train = vectorize_sequences(train_data)
+    test = vectorize_sequences(test_data)
+    one_hot_train_labels = to_categorical(train_labels)
+    one_hot_test_labels = to_categorical(test_labels)
+
+    return (train, one_hot_train_labels, test, one_hot_test_labels)
+
+def vectorize_sequences(sequences, dimension=10000):
+    results = np.zeros((len(sequences), dimension))
+    for i, sequence in enumerate(sequences):
+        results[i, sequence] = 1.
+    return results
+
+def decode_input_data(train_data):
+    word_index = reuters.get_word_index()
+    reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
+    # Note that our indices were offset by 3
+    # because 0, 1 and 2 are reserved indices for ""padding"", ""start of sequence"", and ""unknown"".
+    decoded_newswire = ' '.join([reverse_word_index.get(i - 3, '?') for i in train_data[0]])
+    print(decoded_newswire)
+
+def create_and_train_network(input, index):
+    (train,train_labels,_,_) = input
+
+    # specify the shape of the network
+    model = models.Sequential()
+    model.add(layers.Dropout(0.2))
+    model.add(layers.Dense(128, activation='silu', input_shape=(10000,)))
+    model.add(layers.Dense(46, activation='softmax'))
+
+    # split input data into training set and validation set
+    val_data = train[:1000]
+    train_data = train[1000:]
+
+    val_labels = train_labels[:1000]
+    train_labels = train_labels[1000:]
+
+    cos_dec = keras.optimizers.schedules.CosineDecay(
+        0.0001,
+        len(train) * 25,
+    )
+
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=cos_dec), 
+                loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
+                metrics=['accuracy'])
+    
+    checkpoint_filepath = f'checkpoint_mode_{index + 1}.keras'
+    model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=True)
+
+    # train the network
+    history = model.fit(train_data,
+                        train_labels,
+                        epochs=30,
+                        batch_size=32,
+                        validation_data=(val_data, val_labels),
+                        callbacks=[model_checkpoint_callback])
+    
+    return (history,model)","if __name__ == ""__main__"":
+    input = create_testing_data()
+    (train,train_labels,_,_) = input
+    val_data = train[:1000]
+    val_labels = train_labels[:1000]
+
+    models_l = []
+
+    for i in range(3):
+        model = keras.models.load_model(f'checkpoint_mode_{i + 1}.keras')
+        model.fit(train, train_labels)
+        models_l.append(model)
+
+    ensemble_input = keras.layers.Input(shape=(10000,))
+    outputs = [model(ensemble_input) for model in models_l]
+    ensemble_output = keras.layers.Average()(outputs)
+
+    ensemble = keras.Model(inputs=ensemble_input, outputs=ensemble_output)
+    ensemble.compile(loss=keras.losses.CategoricalCrossentropy(),
+                     metrics=['accuracy'])
+    
+    print(""Dev accuracy: "")
+    acc = ensemble.evaluate(val_data, val_labels)","def print_graphs(history):
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(1, len(loss) + 1)
+
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()
+
+    plt.clf()   # clear figure
+
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()",ClassificationReutersDataset.py,,,,,,No generated code.,,,,No generated code.,,,,No generated code.,,,,No generated code.,,
+"import keras
+from keras.datasets import reuters
+from keras import models
+from keras import layers
+from keras.utils import to_categorical
+import numpy as np
+import matplotlib.pyplot as plt
+
+def create_testing_data():
+    (train_data, train_labels), (test_data, test_labels) = reuters.load_data(num_words=10000)
+
+    train = vectorize_sequences(train_data)
+    test = vectorize_sequences(test_data)
+    one_hot_train_labels = to_categorical(train_labels)
+    one_hot_test_labels = to_categorical(test_labels)
+
+    return (train, one_hot_train_labels, test, one_hot_test_labels)","def decode_input_data(train_data):
+    word_index = reuters.get_word_index()
+    reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
+    # Note that our indices were offset by 3
+    # because 0, 1 and 2 are reserved indices for ""padding"", ""start of sequence"", and ""unknown"".
+    decoded_newswire = ' '.join([reverse_word_index.get(i - 3, '?') for i in train_data[0]])
+    print(decoded_newswire)
+
+def create_and_train_network(input, index):
+    (train,train_labels,_,_) = input
+
+    # specify the shape of the network
+    model = models.Sequential()
+    model.add(layers.Dropout(0.2))
+    model.add(layers.Dense(128, activation='silu', input_shape=(10000,)))
+    model.add(layers.Dense(46, activation='softmax'))
+
+    # split input data into training set and validation set
+    val_data = train[:1000]
+    train_data = train[1000:]
+
+    val_labels = train_labels[:1000]
+    train_labels = train_labels[1000:]
+
+    cos_dec = keras.optimizers.schedules.CosineDecay(
+        0.0001,
+        len(train) * 25,
+    )
+
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=cos_dec), 
+                loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
+                metrics=['accuracy'])
+    
+    checkpoint_filepath = f'checkpoint_mode_{index + 1}.keras'
+    model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=True)
+
+    # train the network
+    history = model.fit(train_data,
+                        train_labels,
+                        epochs=30,
+                        batch_size=32,
+                        validation_data=(val_data, val_labels),
+                        callbacks=[model_checkpoint_callback])
+    
+    return (history,model)
+
+
+
+def print_graphs(history):
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(1, len(loss) + 1)
+
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()
+
+    plt.clf()   # clear figure
+
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()
+
+
+if __name__ == ""__main__"":
+    input = create_testing_data()
+    (train,train_labels,_,_) = input
+    val_data = train[:1000]
+    val_labels = train_labels[:1000]
+
+    models_l = []
+
+    for i in range(3):
+        model = keras.models.load_model(f'checkpoint_mode_{i + 1}.keras')
+        model.fit(train, train_labels)
+        models_l.append(model)
+
+    ensemble_input = keras.layers.Input(shape=(10000,))
+    outputs = [model(ensemble_input) for model in models_l]
+    ensemble_output = keras.layers.Average()(outputs)
+
+    ensemble = keras.Model(inputs=ensemble_input, outputs=ensemble_output)
+    ensemble.compile(loss=keras.losses.CategoricalCrossentropy(),
+                     metrics=['accuracy'])
+    
+    print(""Dev accuracy: "")
+    acc = ensemble.evaluate(val_data, val_labels)","def vectorize_sequences(sequences, dimension=10000):
+    results = np.zeros((len(sequences), dimension))
+    for i, sequence in enumerate(sequences):
+        results[i, sequence] = 1.
+    return results",ClassificationReutersDataset.py,,,"# Vectorizes a list of sequences into a matrix with all values being integers
+def vectorize_sequences(sequences, dimension=10000):
+    results = np.zeros((len(sequences),dimension))
+    for i,sequence in enumerate(sequences):
+        results[i,sequence]=1.
+    return results
+
+# Decodes an encoded newswire back to its original form","# Vectorizes sequences of integers into a binary matrix
+def vectorize_sequences(sequences, dimension=10000):
+    results = np.zeros((len(sequences), dimension))
+    for i, sequence in enumerate(sequences):
+        results[i, sequence] = 1.
+    return results",,No generated code.,,,,No generated code.,,,85.0,"The generated code includes a comment about vectorizing sequences, which is not present in the original code. The spacing in the generated code is inconsistent (missing spaces after commas). Additionally, there is an extra comment at the end of the generated code that is unrelated to the function.",1.0,0.0,95.0,"The generated code includes a comment at the beginning that describes the function, while the original code does not have this comment.",1.0,0.0
+"import keras
+from keras.datasets import reuters
+from keras import models
+from keras import layers
+from keras.utils import to_categorical
+import numpy as np
+import matplotlib.pyplot as plt
+
+def create_testing_data():
+    (train_data, train_labels), (test_data, test_labels) = reuters.load_data(num_words=10000)
+
+    train = vectorize_sequences(train_data)
+    test = vectorize_sequences(test_data)
+    one_hot_train_labels = to_categorical(train_labels)
+    one_hot_test_labels = to_categorical(test_labels)
+
+    return (train, one_hot_train_labels, test, one_hot_test_labels)
+
+def vectorize_sequences(sequences, dimension=10000):
+    results = np.zeros((len(sequences), dimension))
+    for i, sequence in enumerate(sequences):
+        results[i, sequence] = 1.
+    return results","def create_and_train_network(input, index):
+    (train,train_labels,_,_) = input
+
+    # specify the shape of the network
+    model = models.Sequential()
+    model.add(layers.Dropout(0.2))
+    model.add(layers.Dense(128, activation='silu', input_shape=(10000,)))
+    model.add(layers.Dense(46, activation='softmax'))
+
+    # split input data into training set and validation set
+    val_data = train[:1000]
+    train_data = train[1000:]
+
+    val_labels = train_labels[:1000]
+    train_labels = train_labels[1000:]
+
+    cos_dec = keras.optimizers.schedules.CosineDecay(
+        0.0001,
+        len(train) * 25,
+    )
+
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=cos_dec), 
+                loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
+                metrics=['accuracy'])
+    
+    checkpoint_filepath = f'checkpoint_mode_{index + 1}.keras'
+    model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=True)
+
+    # train the network
+    history = model.fit(train_data,
+                        train_labels,
+                        epochs=30,
+                        batch_size=32,
+                        validation_data=(val_data, val_labels),
+                        callbacks=[model_checkpoint_callback])
+    
+    return (history,model)
+
+
+
+def print_graphs(history):
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(1, len(loss) + 1)
+
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()
+
+    plt.clf()   # clear figure
+
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()
+
+
+if __name__ == ""__main__"":
+    input = create_testing_data()
+    (train,train_labels,_,_) = input
+    val_data = train[:1000]
+    val_labels = train_labels[:1000]
+
+    models_l = []
+
+    for i in range(3):
+        model = keras.models.load_model(f'checkpoint_mode_{i + 1}.keras')
+        model.fit(train, train_labels)
+        models_l.append(model)
+
+    ensemble_input = keras.layers.Input(shape=(10000,))
+    outputs = [model(ensemble_input) for model in models_l]
+    ensemble_output = keras.layers.Average()(outputs)
+
+    ensemble = keras.Model(inputs=ensemble_input, outputs=ensemble_output)
+    ensemble.compile(loss=keras.losses.CategoricalCrossentropy(),
+                     metrics=['accuracy'])
+    
+    print(""Dev accuracy: "")
+    acc = ensemble.evaluate(val_data, val_labels)","def decode_input_data(train_data):
+    word_index = reuters.get_word_index()
+    reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
+    # Note that our indices were offset by 3
+    # because 0, 1 and 2 are reserved indices for ""padding"", ""start of sequence"", and ""unknown"".
+    decoded_newswire = ' '.join([reverse_word_index.get(i - 3, '?') for i in train_data[0]])
+    print(decoded_newswire)",ClassificationReutersDataset.py,(results),,# def build_network(input):,"# def evaluate_model(model, x, y):
+#     score = model.evaluate(x,y)
+#     print(""\n%s: %.2f%%"" % (model.metrics_names[1], score[1]*100))",0.0,"The generated code is empty and does not contain any implementation or logic. It lacks the function definition, variable assignments, and print statement present in the original code.",0.0,1.0,,No generated code.,,,0.0,"The generated code is a comment and does not contain any functional code related to decoding input data. The original code defines a function to decode input data using the Reuters dataset, while the generated code appears to be a placeholder for a different function related to building a network.",0.0,1.0,0.0,"The generated code is completely different from the original code. The original code defines a function to decode input data, while the generated code is commented out and appears to be a function for evaluating a model, which is unrelated to the original code's purpose.",0.0,0.0
+"import keras
+from keras.datasets import reuters
+from keras import models
+from keras import layers
+from keras.utils import to_categorical
+import numpy as np
+import matplotlib.pyplot as plt
+
+def create_testing_data():
+    (train_data, train_labels), (test_data, test_labels) = reuters.load_data(num_words=10000)
+
+    train = vectorize_sequences(train_data)
+    test = vectorize_sequences(test_data)
+    one_hot_train_labels = to_categorical(train_labels)
+    one_hot_test_labels = to_categorical(test_labels)
+
+    return (train, one_hot_train_labels, test, one_hot_test_labels)
+
+def vectorize_sequences(sequences, dimension=10000):
+    results = np.zeros((len(sequences), dimension))
+    for i, sequence in enumerate(sequences):
+        results[i, sequence] = 1.
+    return results
+
+def decode_input_data(train_data):
+    word_index = reuters.get_word_index()
+    reverse_word_index = dict([(value, key) for (key, value) in word_index.items()])
+    # Note that our indices were offset by 3
+    # because 0, 1 and 2 are reserved indices for ""padding"", ""start of sequence"", and ""unknown"".
+    decoded_newswire = ' '.join([reverse_word_index.get(i - 3, '?') for i in train_data[0]])
+    print(decoded_newswire)","def print_graphs(history):
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(1, len(loss) + 1)
+
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()
+
+    plt.clf()   # clear figure
+
+    acc = history.history['accuracy']
+    val_acc = history.history['val_accuracy']
+
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.show()
+
+
+if __name__ == ""__main__"":
+    input = create_testing_data()
+    (train,train_labels,_,_) = input
+    val_data = train[:1000]
+    val_labels = train_labels[:1000]
+
+    models_l = []
+
+    for i in range(3):
+        model = keras.models.load_model(f'checkpoint_mode_{i + 1}.keras')
+        model.fit(train, train_labels)
+        models_l.append(model)
+
+    ensemble_input = keras.layers.Input(shape=(10000,))
+    outputs = [model(ensemble_input) for model in models_l]
+    ensemble_output = keras.layers.Average()(outputs)
+
+    ensemble = keras.Model(inputs=ensemble_input, outputs=ensemble_output)
+    ensemble.compile(loss=keras.losses.CategoricalCrossentropy(),
+                     metrics=['accuracy'])
+    
+    print(""Dev accuracy: "")
+    acc = ensemble.evaluate(val_data, val_labels)","def create_and_train_network(input, index):
+    (train,train_labels,_,_) = input
+
+    # specify the shape of the network
+    model = models.Sequential()
+    model.add(layers.Dropout(0.2))
+    model.add(layers.Dense(128, activation='silu', input_shape=(10000,)))
+    model.add(layers.Dense(46, activation='softmax'))
+
+    # split input data into training set and validation set
+    val_data = train[:1000]
+    train_data = train[1000:]
+
+    val_labels = train_labels[:1000]
+    train_labels = train_labels[1000:]
+
+    cos_dec = keras.optimizers.schedules.CosineDecay(
+        0.0001,
+        len(train) * 25,
+    )
+
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=cos_dec), 
+                loss=keras.losses.CategoricalCrossentropy(label_smoothing=0.1),
+                metrics=['accuracy'])
+    
+    checkpoint_filepath = f'checkpoint_mode_{index + 1}.keras'
+    model_checkpoint_callback = keras.callbacks.ModelCheckpoint(
+        filepath=checkpoint_filepath,
+        monitor='val_accuracy',
+        mode='max',
+        save_best_only=True)
+
+    # train the network
+    history = model.fit(train_data,
+                        train_labels,
+                        epochs=30,
+                        batch_size=32,
+                        validation_data=(val_data, val_labels),
+                        callbacks=[model_checkpoint_callback])
+    
+    return (history,model)",ClassificationReutersDataset.py,return decoded_newswire,,,"def build_network(input_size, output_size):
+    network = models.Sequential()
+    network.add(layers.Dense(64, activation=""relu"", input_shape=(input_size,)))
+    network.add(layers.Dense(64, activation=""relu""))
+    network.add(layers.Dense(output_size, activation=""softmax""))
+    network.summary()
+    return network",0.0,The generated code does not contain any of the functionality present in the original code. It simply returns a variable 'decoded_newswire' which is unrelated to the original function's purpose of creating and training a neural network.,0.0,1.0,,No generated code.,,,,No generated code.,,,30.0,"The generated code has a different function name and parameters. It does not include dropout layers, training data splitting, optimizer configuration, or model checkpointing. The generated code also uses a different architecture with fewer neurons and a different activation function. Additionally, it does not train the model or return training history.",0.25,5.0
+"import os
+import numpy as np
+import tifffile
+import cv2
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+# Constants
+TIFF_FILE_PATH = r""D:\Cilia test\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI.ome.tiff""
+OUTPUT_BASE_DIR = os.path.dirname(TIFF_FILE_PATH)
+MAX_INTENSITY_PROJECTION_ENABLED = True
+PSEUDOCOLOR_ENABLED = True
+
+def max_intensity_projection(images):
+    """"""
+    Create a maximum intensity projection from a stack of images.
+    :param images: 3D numpy array (num_images, height, width).
+    :return: 2D numpy array representing the MIP.
+    """"""
+    return np.max(images, axis=0)
+
+def apply_pseudocolor(image_path):
+    """"""
+    Apply pseudocolor to a grayscale image, keeping the background black.
+    :param image_path: Path to the grayscale image.
+    """"""
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f""Error: Unable to load image at {image_path}."")
+        return
+
+    # Check the data type
+    print(f""Pseudocolor - Image dtype before normalization: {img.dtype}"")
+    print(f""Pseudocolor - Image min: {img.min()}, max: {img.max()}"")
+
+    # If image is not 8-bit, normalize it
+    if img.dtype != np.uint8:
+        img = normalize_image(img)
+        print(f""Pseudocolor - Image dtype after normalization: {img.dtype}"")
+        print(f""Pseudocolor - Image min after normalization: {img.min()}, max after normalization: {img.max()}"")
+
+    # Apply threshold to create mask
+    _, mask = cv2.threshold(img, 2, 255, cv2.THRESH_BINARY)
+
+    # Apply pseudocolor map
+    pseudocolor_img = cv2.applyColorMap(img, cv2.COLORMAP_VIRIDIS)
+
+    # Set background to black
+    pseudocolor_img[mask == 0] = 0
+
+    # Save pseudocolored image
+    directory, filename = os.path.split(image_path)
+    output_path = os.path.join(directory, f'pseudocolor_{filename}')
+    cv2.imwrite(output_path, pseudocolor_img)
+    print(f""Pseudocolor image saved at: {output_path}"")
+
+def normalize_image(img):
+    """"""
+    Normalize image to 0-255 and convert to uint8.
+    """"""
+    img_min = img.min()
+    img_max = img.max()
+    if img_max == img_min:
+        return np.zeros_like(img, dtype=np.uint8)
+    normalized = ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
+    return normalized","def main():
+    with tifffile.TiffFile(TIFF_FILE_PATH) as tif:
+        series_count = len(tif.series)
+        print(f""Total series to process: {series_count}"")
+
+        # Prepare all tasks for parallel processing
+        tasks = []
+        with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+            for series_idx, series in enumerate(tif.series):
+                print(f""Processing series {series_idx + 1} of {series_count}"")
+
+                # Read all image data for the current series at once
+                image_data = series.asarray()  # Shape: (Z, C, Y, X)
+                print(f""Series {series_idx + 1} shape: {image_data.shape}, dtype: {image_data.dtype}"")
+
+                num_z, num_channels, height, width = image_data.shape  # Assuming shape order is (Z, C, Y, X)
+
+                for channel in range(num_channels):
+                    channel_dir = os.path.join(OUTPUT_BASE_DIR, f'series_{series_idx + 1}', f'channel_{channel + 1}')
+
+                    # Extract all images for this channel
+                    channel_images = image_data[:, channel, :, :]  # Shape: (Z, Y, X)
+
+                    # Submit processing task
+                    tasks.append(executor.submit(
+                        process_channel,
+                        series_idx,
+                        channel,
+                        num_z,
+                        channel_images,
+                        channel_dir
+                    ))
+
+            # Optionally, monitor task completion
+            for future in as_completed(tasks):
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f""Error processing a channel: {e}"")
+
+    print(""Processing complete."")
+
+if __name__ == ""__main__"":
+    main()","def process_channel(series_idx, channel, num_images, image_arrays, output_dir):
+    """"""
+    Process a single channel: save individual images, create MIP, and apply pseudocolor.
+    :param series_idx: Index of the series.
+    :param channel: Channel number.
+    :param num_images: Number of Z-slices.
+    :param image_arrays: 3D numpy array (num_images, height, width) for the channel.
+    :param output_dir: Directory to save the output images.
+    """"""
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Debug: Check image array properties
+    print(f""Processing Series {series_idx + 1}, Channel {channel + 1}"")
+    print(f""Image array dtype: {image_arrays.dtype}, min: {image_arrays.min()}, max: {image_arrays.max()}"")
+
+    # Determine if normalization is needed
+    need_normalization = False
+    if image_arrays.dtype != np.uint8:
+        need_normalization = True
+        image_min = image_arrays.min()
+        image_max = image_arrays.max()
+        print(f""Channel {channel + 1} - Original dtype: {image_arrays.dtype}, min: {image_min}, max: {image_max}"")
+
+    # Save all images
+    for z in range(num_images):
+        img = image_arrays[z]
+
+        if need_normalization:
+            img_to_save = normalize_image(img)
+        else:
+            img_to_save = img
+
+        image_path = os.path.join(output_dir, f'image_{z + 1}.png')
+
+        # Save image using cv2.imwrite
+        success = cv2.imwrite(image_path, img_to_save)
+        if not success:
+            print(f""Failed to save image at {image_path}"")
+
+    print(f""All images for channel {channel + 1} in series {series_idx + 1} saved to {output_dir}."")
+
+    if MAX_INTENSITY_PROJECTION_ENABLED:
+        mip_image = max_intensity_projection(image_arrays)
+        print(f""MIP - dtype before normalization: {mip_image.dtype}, min: {mip_image.min()}, max: {mip_image.max()}"")
+
+        # Determine if normalization is needed
+        if mip_image.dtype != np.uint8:
+            mip_image_normalized = normalize_image(mip_image)
+            print(f""MIP - dtype after normalization: {mip_image_normalized.dtype}, min: {mip_image_normalized.min()}, max: {mip_image_normalized.max()}"")
+        else:
+            mip_image_normalized = mip_image
+
+        mip_image_path = os.path.join(output_dir, 'max_intensity_projection.png')
+        success = cv2.imwrite(mip_image_path, mip_image_normalized)
+        if not success:
+            print(f""Failed to save MIP image at {mip_image_path}"")
+        else:
+            print(f""Max intensity projection saved for channel {channel + 1} in series {series_idx + 1} at {mip_image_path}."")
+
+            if PSEUDOCOLOR_ENABLED:
+                apply_pseudocolor(mip_image_path)",FileExtractionPseudocolorMIP.py,(normalized),,"def process_channel(series_index, channel_index, num_z, channel_images, channel_dir):
+    """"""
+    Process an individual channel within a TIFF file.
+    :param series_index: Index of the series being processed.
+    :param channel_index: Index of the channel being processed.
+    :param num_z: Number of Z planes in the input volume.
+    :param channel_images: Numpy array containing the channel images.
+    :param channel_dir: Directory where the channel files will be stored.
+    """"""
+    # Create directories for each channel
+    if not os.path","def save_mip(series_index, channel_index, mip, dir_path):
+    """"""
+    Saves the given Maximum Intensity Projection (MIP) into the specified directory path.
+    The file name will be ""mip_<series index>_<channel index>.png"".
+    Args:
+      series_index (int): Index of the series being processed.
+      channel_index (int): Index of the channel within the series.
+      mip (numpy.ndarray): A 2D NumPy array containing the MIP data.
+      dir_path (str): Directory where the MIP should be saved.
+    Returns:
+      str: Full path of the saved MIP file.
+    Raises:
+      ValueError: If the provided `mip` argument is not a valid 2D NumPy array or has an invalid number of dimensions.
+    """"""
+    if not isinstance(mip, np.ndarray) or mip.ndim!= 2:
+        raise ValueError('Invalid input for MIP.')
+    
+    # Construct the full path of the MIP file
+    file_name ='mip_' + str(series_index+1) + '_' + str(channel_index+1) + '.png'
+    file_",75.0,"The generated code lacks the docstring, the debug print statements, and the normalization checks for both the images and the MIP. It also does not include the error handling for saving images. Additionally, the generated code does not have the conditional checks for MAX_INTENSITY_PROJECTION_ENABLED and PSEUDOCOLOR_ENABLED.",0.85,5.0,,No generated code.,,,65.0,"1. Parameter names differ: series_idx vs series_index, channel vs channel_index, num_images vs num_z, image_arrays vs channel_images, output_dir vs channel_dir.
+2. The original code includes detailed debug print statements that are missing in the generated code.
+3. The generated code is incomplete and cuts off mid-statement, missing the logic for processing images and saving them.
+4. The original code has checks for normalization and saving images, which are not present in the generated code.",0.5,3.0,30.0,"The generated code defines a function to save a Maximum Intensity Projection (MIP) image, while the original code processes a channel and saves multiple images. The original code includes normalization checks, image saving in a loop, and prints debug information, which are not present in the generated code. The generated code also has an incomplete line at the end.",0.25,1.0
+"import os
+import numpy as np
+import tifffile
+import cv2
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+# Constants
+TIFF_FILE_PATH = r""D:\Cilia test\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI.ome.tiff""
+OUTPUT_BASE_DIR = os.path.dirname(TIFF_FILE_PATH)
+MAX_INTENSITY_PROJECTION_ENABLED = True
+PSEUDOCOLOR_ENABLED = True","def apply_pseudocolor(image_path):
+    """"""
+    Apply pseudocolor to a grayscale image, keeping the background black.
+    :param image_path: Path to the grayscale image.
+    """"""
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f""Error: Unable to load image at {image_path}."")
+        return
+
+    # Check the data type
+    print(f""Pseudocolor - Image dtype before normalization: {img.dtype}"")
+    print(f""Pseudocolor - Image min: {img.min()}, max: {img.max()}"")
+
+    # If image is not 8-bit, normalize it
+    if img.dtype != np.uint8:
+        img = normalize_image(img)
+        print(f""Pseudocolor - Image dtype after normalization: {img.dtype}"")
+        print(f""Pseudocolor - Image min after normalization: {img.min()}, max after normalization: {img.max()}"")
+
+    # Apply threshold to create mask
+    _, mask = cv2.threshold(img, 2, 255, cv2.THRESH_BINARY)
+
+    # Apply pseudocolor map
+    pseudocolor_img = cv2.applyColorMap(img, cv2.COLORMAP_VIRIDIS)
+
+    # Set background to black
+    pseudocolor_img[mask == 0] = 0
+
+    # Save pseudocolored image
+    directory, filename = os.path.split(image_path)
+    output_path = os.path.join(directory, f'pseudocolor_{filename}')
+    cv2.imwrite(output_path, pseudocolor_img)
+    print(f""Pseudocolor image saved at: {output_path}"")
+
+def normalize_image(img):
+    """"""
+    Normalize image to 0-255 and convert to uint8.
+    """"""
+    img_min = img.min()
+    img_max = img.max()
+    if img_max == img_min:
+        return np.zeros_like(img, dtype=np.uint8)
+    normalized = ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
+    return normalized
+
+def process_channel(series_idx, channel, num_images, image_arrays, output_dir):
+    """"""
+    Process a single channel: save individual images, create MIP, and apply pseudocolor.
+    :param series_idx: Index of the series.
+    :param channel: Channel number.
+    :param num_images: Number of Z-slices.
+    :param image_arrays: 3D numpy array (num_images, height, width) for the channel.
+    :param output_dir: Directory to save the output images.
+    """"""
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Debug: Check image array properties
+    print(f""Processing Series {series_idx + 1}, Channel {channel + 1}"")
+    print(f""Image array dtype: {image_arrays.dtype}, min: {image_arrays.min()}, max: {image_arrays.max()}"")
+
+    # Determine if normalization is needed
+    need_normalization = False
+    if image_arrays.dtype != np.uint8:
+        need_normalization = True
+        image_min = image_arrays.min()
+        image_max = image_arrays.max()
+        print(f""Channel {channel + 1} - Original dtype: {image_arrays.dtype}, min: {image_min}, max: {image_max}"")
+
+    # Save all images
+    for z in range(num_images):
+        img = image_arrays[z]
+
+        if need_normalization:
+            img_to_save = normalize_image(img)
+        else:
+            img_to_save = img
+
+        image_path = os.path.join(output_dir, f'image_{z + 1}.png')
+
+        # Save image using cv2.imwrite
+        success = cv2.imwrite(image_path, img_to_save)
+        if not success:
+            print(f""Failed to save image at {image_path}"")
+
+    print(f""All images for channel {channel + 1} in series {series_idx + 1} saved to {output_dir}."")
+
+    if MAX_INTENSITY_PROJECTION_ENABLED:
+        mip_image = max_intensity_projection(image_arrays)
+        print(f""MIP - dtype before normalization: {mip_image.dtype}, min: {mip_image.min()}, max: {mip_image.max()}"")
+
+        # Determine if normalization is needed
+        if mip_image.dtype != np.uint8:
+            mip_image_normalized = normalize_image(mip_image)
+            print(f""MIP - dtype after normalization: {mip_image_normalized.dtype}, min: {mip_image_normalized.min()}, max: {mip_image_normalized.max()}"")
+        else:
+            mip_image_normalized = mip_image
+
+        mip_image_path = os.path.join(output_dir, 'max_intensity_projection.png')
+        success = cv2.imwrite(mip_image_path, mip_image_normalized)
+        if not success:
+            print(f""Failed to save MIP image at {mip_image_path}"")
+        else:
+            print(f""Max intensity projection saved for channel {channel + 1} in series {series_idx + 1} at {mip_image_path}."")
+
+            if PSEUDOCOLOR_ENABLED:
+                apply_pseudocolor(mip_image_path)
+
+def main():
+    with tifffile.TiffFile(TIFF_FILE_PATH) as tif:
+        series_count = len(tif.series)
+        print(f""Total series to process: {series_count}"")
+
+        # Prepare all tasks for parallel processing
+        tasks = []
+        with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+            for series_idx, series in enumerate(tif.series):
+                print(f""Processing series {series_idx + 1} of {series_count}"")
+
+                # Read all image data for the current series at once
+                image_data = series.asarray()  # Shape: (Z, C, Y, X)
+                print(f""Series {series_idx + 1} shape: {image_data.shape}, dtype: {image_data.dtype}"")
+
+                num_z, num_channels, height, width = image_data.shape  # Assuming shape order is (Z, C, Y, X)
+
+                for channel in range(num_channels):
+                    channel_dir = os.path.join(OUTPUT_BASE_DIR, f'series_{series_idx + 1}', f'channel_{channel + 1}')
+
+                    # Extract all images for this channel
+                    channel_images = image_data[:, channel, :, :]  # Shape: (Z, Y, X)
+
+                    # Submit processing task
+                    tasks.append(executor.submit(
+                        process_channel,
+                        series_idx,
+                        channel,
+                        num_z,
+                        channel_images,
+                        channel_dir
+                    ))
+
+            # Optionally, monitor task completion
+            for future in as_completed(tasks):
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f""Error processing a channel: {e}"")
+
+    print(""Processing complete."")
+
+if __name__ == ""__main__"":
+    main()","def max_intensity_projection(images):
+    """"""
+    Create a maximum intensity projection from a stack of images.
+    :param images: 3D numpy array (num_images, height, width).
+    :return: 2D numpy array representing the MIP.
+    """"""
+    return np.max(images, axis=0)",FileExtractionPseudocolorMIP.py,def max_intensity_projection(image_arrays):,,,"def max_intensity_projection(image_array):
+    """"""
+    Create maximum intensity projection from an input 3D image stack.
+    :param image_array: Input 3D image stack (numpy array), assumed to be ordered by Z, then Y, then X dimensions.
+    :return: Maximum intensity projection image (2D numpy array).
+    """"""
+    assert isinstance(image_array, np.ndarray)
+    assert image_array.ndim >= 3
+
+    # Get the size of each dimension
+    dims = list(range(len(image_array.shape)))
+    z_dim, y_dim, x_dim = [dims.pop(-1)]*3
+
+    # Calculate the maximum intensity projection along the specified axis
+    mip_image = np.amax(image_array, axis=(y_dim, x_dim))
+
+    return mip_image",70.0,"Function name is the same, but parameter name is different. The docstring is missing in the generated code. The return statement is not present in the generated code.",0.5,2.0,,No generated code.,,,,No generated code.,,,65.0,1. Parameter name changed from 'images' to 'image_array'. 2. Docstring description changed slightly. 3. Added assertions to check input type and dimensions. 4. Dimension extraction and assignment is more complex in generated code. 5. Uses np.amax instead of np.max. 6. Axis specification in np.amax is different (uses y_dim and x_dim instead of 0).,0.75,2.0
+"import os
+import numpy as np
+import tifffile
+import cv2
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+# Constants
+TIFF_FILE_PATH = r""D:\Cilia test\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI.ome.tiff""
+OUTPUT_BASE_DIR = os.path.dirname(TIFF_FILE_PATH)
+MAX_INTENSITY_PROJECTION_ENABLED = True
+PSEUDOCOLOR_ENABLED = True
+
+def max_intensity_projection(images):
+    """"""
+    Create a maximum intensity projection from a stack of images.
+    :param images: 3D numpy array (num_images, height, width).
+    :return: 2D numpy array representing the MIP.
+    """"""
+    return np.max(images, axis=0)
+
+def apply_pseudocolor(image_path):
+    """"""
+    Apply pseudocolor to a grayscale image, keeping the background black.
+    :param image_path: Path to the grayscale image.
+    """"""
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f""Error: Unable to load image at {image_path}."")
+        return
+
+    # Check the data type
+    print(f""Pseudocolor - Image dtype before normalization: {img.dtype}"")
+    print(f""Pseudocolor - Image min: {img.min()}, max: {img.max()}"")
+
+    # If image is not 8-bit, normalize it
+    if img.dtype != np.uint8:
+        img = normalize_image(img)
+        print(f""Pseudocolor - Image dtype after normalization: {img.dtype}"")
+        print(f""Pseudocolor - Image min after normalization: {img.min()}, max after normalization: {img.max()}"")
+
+    # Apply threshold to create mask
+    _, mask = cv2.threshold(img, 2, 255, cv2.THRESH_BINARY)
+
+    # Apply pseudocolor map
+    pseudocolor_img = cv2.applyColorMap(img, cv2.COLORMAP_VIRIDIS)
+
+    # Set background to black
+    pseudocolor_img[mask == 0] = 0
+
+    # Save pseudocolored image
+    directory, filename = os.path.split(image_path)
+    output_path = os.path.join(directory, f'pseudocolor_{filename}')
+    cv2.imwrite(output_path, pseudocolor_img)
+    print(f""Pseudocolor image saved at: {output_path}"")","def process_channel(series_idx, channel, num_images, image_arrays, output_dir):
+    """"""
+    Process a single channel: save individual images, create MIP, and apply pseudocolor.
+    :param series_idx: Index of the series.
+    :param channel: Channel number.
+    :param num_images: Number of Z-slices.
+    :param image_arrays: 3D numpy array (num_images, height, width) for the channel.
+    :param output_dir: Directory to save the output images.
+    """"""
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Debug: Check image array properties
+    print(f""Processing Series {series_idx + 1}, Channel {channel + 1}"")
+    print(f""Image array dtype: {image_arrays.dtype}, min: {image_arrays.min()}, max: {image_arrays.max()}"")
+
+    # Determine if normalization is needed
+    need_normalization = False
+    if image_arrays.dtype != np.uint8:
+        need_normalization = True
+        image_min = image_arrays.min()
+        image_max = image_arrays.max()
+        print(f""Channel {channel + 1} - Original dtype: {image_arrays.dtype}, min: {image_min}, max: {image_max}"")
+
+    # Save all images
+    for z in range(num_images):
+        img = image_arrays[z]
+
+        if need_normalization:
+            img_to_save = normalize_image(img)
+        else:
+            img_to_save = img
+
+        image_path = os.path.join(output_dir, f'image_{z + 1}.png')
+
+        # Save image using cv2.imwrite
+        success = cv2.imwrite(image_path, img_to_save)
+        if not success:
+            print(f""Failed to save image at {image_path}"")
+
+    print(f""All images for channel {channel + 1} in series {series_idx + 1} saved to {output_dir}."")
+
+    if MAX_INTENSITY_PROJECTION_ENABLED:
+        mip_image = max_intensity_projection(image_arrays)
+        print(f""MIP - dtype before normalization: {mip_image.dtype}, min: {mip_image.min()}, max: {mip_image.max()}"")
+
+        # Determine if normalization is needed
+        if mip_image.dtype != np.uint8:
+            mip_image_normalized = normalize_image(mip_image)
+            print(f""MIP - dtype after normalization: {mip_image_normalized.dtype}, min: {mip_image_normalized.min()}, max: {mip_image_normalized.max()}"")
+        else:
+            mip_image_normalized = mip_image
+
+        mip_image_path = os.path.join(output_dir, 'max_intensity_projection.png')
+        success = cv2.imwrite(mip_image_path, mip_image_normalized)
+        if not success:
+            print(f""Failed to save MIP image at {mip_image_path}"")
+        else:
+            print(f""Max intensity projection saved for channel {channel + 1} in series {series_idx + 1} at {mip_image_path}."")
+
+            if PSEUDOCOLOR_ENABLED:
+                apply_pseudocolor(mip_image_path)
+
+def main():
+    with tifffile.TiffFile(TIFF_FILE_PATH) as tif:
+        series_count = len(tif.series)
+        print(f""Total series to process: {series_count}"")
+
+        # Prepare all tasks for parallel processing
+        tasks = []
+        with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+            for series_idx, series in enumerate(tif.series):
+                print(f""Processing series {series_idx + 1} of {series_count}"")
+
+                # Read all image data for the current series at once
+                image_data = series.asarray()  # Shape: (Z, C, Y, X)
+                print(f""Series {series_idx + 1} shape: {image_data.shape}, dtype: {image_data.dtype}"")
+
+                num_z, num_channels, height, width = image_data.shape  # Assuming shape order is (Z, C, Y, X)
+
+                for channel in range(num_channels):
+                    channel_dir = os.path.join(OUTPUT_BASE_DIR, f'series_{series_idx + 1}', f'channel_{channel + 1}')
+
+                    # Extract all images for this channel
+                    channel_images = image_data[:, channel, :, :]  # Shape: (Z, Y, X)
+
+                    # Submit processing task
+                    tasks.append(executor.submit(
+                        process_channel,
+                        series_idx,
+                        channel,
+                        num_z,
+                        channel_images,
+                        channel_dir
+                    ))
+
+            # Optionally, monitor task completion
+            for future in as_completed(tasks):
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f""Error processing a channel: {e}"")
+
+    print(""Processing complete."")
+
+if __name__ == ""__main__"":
+    main()","def normalize_image(img):
+    """"""
+    Normalize image to 0-255 and convert to uint8.
+    """"""
+    img_min = img.min()
+    img_max = img.max()
+    if img_max == img_min:
+        return np.zeros_like(img, dtype=np.uint8)
+    normalized = ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
+    return normalized",FileExtractionPseudocolorMIP.py,"print(f""Output path: {output_path}"")",,,"def normalize_image(image):
+    """"""
+    Normalize an image by converting its values into uint8 format.
+    :param image: Numpy array containing the image.
+    :return: Normalized image as a numpy array.
+    """"""
+    normalized_image = ((image - image.min()) / (image.max() - image.min())) * 255.0
+    return normalized_image.astype('uint8')",0.0,"The generated code does not contain any of the functionality present in the original code. It only prints an output path, which is unrelated to image normalization. The original code defines a function to normalize an image, while the generated code lacks any function definition or image processing logic.",0.0,1.0,,No generated code.,,,,No generated code.,,,85.0,Function name changed from 'img' to 'image'. The docstring is slightly different in wording and includes parameters and return type. The handling of the case where img_max equals img_min is missing in the generated code. The generated code uses '255.0' instead of '255'.,0.9,1.0
+"import os
+import numpy as np
+import tifffile
+import cv2
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+# Constants
+TIFF_FILE_PATH = r""D:\Cilia test\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI.ome.tiff""
+OUTPUT_BASE_DIR = os.path.dirname(TIFF_FILE_PATH)
+MAX_INTENSITY_PROJECTION_ENABLED = True
+PSEUDOCOLOR_ENABLED = True
+
+def max_intensity_projection(images):
+    """"""
+    Create a maximum intensity projection from a stack of images.
+    :param images: 3D numpy array (num_images, height, width).
+    :return: 2D numpy array representing the MIP.
+    """"""
+    return np.max(images, axis=0)","def normalize_image(img):
+    """"""
+    Normalize image to 0-255 and convert to uint8.
+    """"""
+    img_min = img.min()
+    img_max = img.max()
+    if img_max == img_min:
+        return np.zeros_like(img, dtype=np.uint8)
+    normalized = ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
+    return normalized
+
+def process_channel(series_idx, channel, num_images, image_arrays, output_dir):
+    """"""
+    Process a single channel: save individual images, create MIP, and apply pseudocolor.
+    :param series_idx: Index of the series.
+    :param channel: Channel number.
+    :param num_images: Number of Z-slices.
+    :param image_arrays: 3D numpy array (num_images, height, width) for the channel.
+    :param output_dir: Directory to save the output images.
+    """"""
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Debug: Check image array properties
+    print(f""Processing Series {series_idx + 1}, Channel {channel + 1}"")
+    print(f""Image array dtype: {image_arrays.dtype}, min: {image_arrays.min()}, max: {image_arrays.max()}"")
+
+    # Determine if normalization is needed
+    need_normalization = False
+    if image_arrays.dtype != np.uint8:
+        need_normalization = True
+        image_min = image_arrays.min()
+        image_max = image_arrays.max()
+        print(f""Channel {channel + 1} - Original dtype: {image_arrays.dtype}, min: {image_min}, max: {image_max}"")
+
+    # Save all images
+    for z in range(num_images):
+        img = image_arrays[z]
+
+        if need_normalization:
+            img_to_save = normalize_image(img)
+        else:
+            img_to_save = img
+
+        image_path = os.path.join(output_dir, f'image_{z + 1}.png')
+
+        # Save image using cv2.imwrite
+        success = cv2.imwrite(image_path, img_to_save)
+        if not success:
+            print(f""Failed to save image at {image_path}"")
+
+    print(f""All images for channel {channel + 1} in series {series_idx + 1} saved to {output_dir}."")
+
+    if MAX_INTENSITY_PROJECTION_ENABLED:
+        mip_image = max_intensity_projection(image_arrays)
+        print(f""MIP - dtype before normalization: {mip_image.dtype}, min: {mip_image.min()}, max: {mip_image.max()}"")
+
+        # Determine if normalization is needed
+        if mip_image.dtype != np.uint8:
+            mip_image_normalized = normalize_image(mip_image)
+            print(f""MIP - dtype after normalization: {mip_image_normalized.dtype}, min: {mip_image_normalized.min()}, max: {mip_image_normalized.max()}"")
+        else:
+            mip_image_normalized = mip_image
+
+        mip_image_path = os.path.join(output_dir, 'max_intensity_projection.png')
+        success = cv2.imwrite(mip_image_path, mip_image_normalized)
+        if not success:
+            print(f""Failed to save MIP image at {mip_image_path}"")
+        else:
+            print(f""Max intensity projection saved for channel {channel + 1} in series {series_idx + 1} at {mip_image_path}."")
+
+            if PSEUDOCOLOR_ENABLED:
+                apply_pseudocolor(mip_image_path)
+
+def main():
+    with tifffile.TiffFile(TIFF_FILE_PATH) as tif:
+        series_count = len(tif.series)
+        print(f""Total series to process: {series_count}"")
+
+        # Prepare all tasks for parallel processing
+        tasks = []
+        with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+            for series_idx, series in enumerate(tif.series):
+                print(f""Processing series {series_idx + 1} of {series_count}"")
+
+                # Read all image data for the current series at once
+                image_data = series.asarray()  # Shape: (Z, C, Y, X)
+                print(f""Series {series_idx + 1} shape: {image_data.shape}, dtype: {image_data.dtype}"")
+
+                num_z, num_channels, height, width = image_data.shape  # Assuming shape order is (Z, C, Y, X)
+
+                for channel in range(num_channels):
+                    channel_dir = os.path.join(OUTPUT_BASE_DIR, f'series_{series_idx + 1}', f'channel_{channel + 1}')
+
+                    # Extract all images for this channel
+                    channel_images = image_data[:, channel, :, :]  # Shape: (Z, Y, X)
+
+                    # Submit processing task
+                    tasks.append(executor.submit(
+                        process_channel,
+                        series_idx,
+                        channel,
+                        num_z,
+                        channel_images,
+                        channel_dir
+                    ))
+
+            # Optionally, monitor task completion
+            for future in as_completed(tasks):
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f""Error processing a channel: {e}"")
+
+    print(""Processing complete."")
+
+if __name__ == ""__main__"":
+    main()","def apply_pseudocolor(image_path):
+    """"""
+    Apply pseudocolor to a grayscale image, keeping the background black.
+    :param image_path: Path to the grayscale image.
+    """"""
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f""Error: Unable to load image at {image_path}."")
+        return
+
+    # Check the data type
+    print(f""Pseudocolor - Image dtype before normalization: {img.dtype}"")
+    print(f""Pseudocolor - Image min: {img.min()}, max: {img.max()}"")
+
+    # If image is not 8-bit, normalize it
+    if img.dtype != np.uint8:
+        img = normalize_image(img)
+        print(f""Pseudocolor - Image dtype after normalization: {img.dtype}"")
+        print(f""Pseudocolor - Image min after normalization: {img.min()}, max after normalization: {img.max()}"")
+
+    # Apply threshold to create mask
+    _, mask = cv2.threshold(img, 2, 255, cv2.THRESH_BINARY)
+
+    # Apply pseudocolor map
+    pseudocolor_img = cv2.applyColorMap(img, cv2.COLORMAP_VIRIDIS)
+
+    # Set background to black
+    pseudocolor_img[mask == 0] = 0
+
+    # Save pseudocolored image
+    directory, filename = os.path.split(image_path)
+    output_path = os.path.join(directory, f'pseudocolor_{filename}')
+    cv2.imwrite(output_path, pseudocolor_img)
+    print(f""Pseudocolor image saved at: {output_path}"")",FileExtractionPseudocolorMIP.py,,,,"def apply_pseudocolor(filename):
+    """"""
+    Apply pseudocolor to an input image file.
+    :param filename: Path to the input image file.
+    """"""
+    img = cv2.imread(filename)
+    bgr_img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+    hsv_img = cv2.cvtColor(bgr_img, cv2.COLOR_BGR2HSV)
+
+    # Define color ranges for each channel
+    hue_range = [0, 79]
+    saturation_range = [0, 255]
+    value_range = [0, 255]
+
+    # Set lower and upper bounds based on the defined color ranges
+    lower_bound = np.array([hue_range[0], saturation_range[0], value_range[0]])
+    upper_bound = np.array([hue_range[1], saturation_range[1], value_range[1]])
+
+    # Threshold HSV values within specified ranges
+    mask = cv2.inRange(hsv_img, lower_bound, upper_bound)
+
+    # Convert back to BGR",,No generated code.,,,,No generated code.,,,,No generated code.,,,,Error during evaluation,,
+"import os
+import numpy as np
+import tifffile
+import cv2
+from concurrent.futures import ProcessPoolExecutor, as_completed
+
+# Constants
+TIFF_FILE_PATH = r""D:\Cilia test\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI\RPE1_FHmNG_MmKatnal2i1_aCEP164_A555_aARL13B_CY5_DAPI.ome.tiff""
+OUTPUT_BASE_DIR = os.path.dirname(TIFF_FILE_PATH)
+MAX_INTENSITY_PROJECTION_ENABLED = True
+PSEUDOCOLOR_ENABLED = True
+
+def max_intensity_projection(images):
+    """"""
+    Create a maximum intensity projection from a stack of images.
+    :param images: 3D numpy array (num_images, height, width).
+    :return: 2D numpy array representing the MIP.
+    """"""
+    return np.max(images, axis=0)
+
+def apply_pseudocolor(image_path):
+    """"""
+    Apply pseudocolor to a grayscale image, keeping the background black.
+    :param image_path: Path to the grayscale image.
+    """"""
+    img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
+    if img is None:
+        print(f""Error: Unable to load image at {image_path}."")
+        return
+
+    # Check the data type
+    print(f""Pseudocolor - Image dtype before normalization: {img.dtype}"")
+    print(f""Pseudocolor - Image min: {img.min()}, max: {img.max()}"")
+
+    # If image is not 8-bit, normalize it
+    if img.dtype != np.uint8:
+        img = normalize_image(img)
+        print(f""Pseudocolor - Image dtype after normalization: {img.dtype}"")
+        print(f""Pseudocolor - Image min after normalization: {img.min()}, max after normalization: {img.max()}"")
+
+    # Apply threshold to create mask
+    _, mask = cv2.threshold(img, 2, 255, cv2.THRESH_BINARY)
+
+    # Apply pseudocolor map
+    pseudocolor_img = cv2.applyColorMap(img, cv2.COLORMAP_VIRIDIS)
+
+    # Set background to black
+    pseudocolor_img[mask == 0] = 0
+
+    # Save pseudocolored image
+    directory, filename = os.path.split(image_path)
+    output_path = os.path.join(directory, f'pseudocolor_{filename}')
+    cv2.imwrite(output_path, pseudocolor_img)
+    print(f""Pseudocolor image saved at: {output_path}"")
+
+def normalize_image(img):
+    """"""
+    Normalize image to 0-255 and convert to uint8.
+    """"""
+    img_min = img.min()
+    img_max = img.max()
+    if img_max == img_min:
+        return np.zeros_like(img, dtype=np.uint8)
+    normalized = ((img - img_min) / (img_max - img_min) * 255).astype(np.uint8)
+    return normalized
+
+def process_channel(series_idx, channel, num_images, image_arrays, output_dir):
+    """"""
+    Process a single channel: save individual images, create MIP, and apply pseudocolor.
+    :param series_idx: Index of the series.
+    :param channel: Channel number.
+    :param num_images: Number of Z-slices.
+    :param image_arrays: 3D numpy array (num_images, height, width) for the channel.
+    :param output_dir: Directory to save the output images.
+    """"""
+    os.makedirs(output_dir, exist_ok=True)
+
+    # Debug: Check image array properties
+    print(f""Processing Series {series_idx + 1}, Channel {channel + 1}"")
+    print(f""Image array dtype: {image_arrays.dtype}, min: {image_arrays.min()}, max: {image_arrays.max()}"")
+
+    # Determine if normalization is needed
+    need_normalization = False
+    if image_arrays.dtype != np.uint8:
+        need_normalization = True
+        image_min = image_arrays.min()
+        image_max = image_arrays.max()
+        print(f""Channel {channel + 1} - Original dtype: {image_arrays.dtype}, min: {image_min}, max: {image_max}"")
+
+    # Save all images
+    for z in range(num_images):
+        img = image_arrays[z]
+
+        if need_normalization:
+            img_to_save = normalize_image(img)
+        else:
+            img_to_save = img
+
+        image_path = os.path.join(output_dir, f'image_{z + 1}.png')
+
+        # Save image using cv2.imwrite
+        success = cv2.imwrite(image_path, img_to_save)
+        if not success:
+            print(f""Failed to save image at {image_path}"")
+
+    print(f""All images for channel {channel + 1} in series {series_idx + 1} saved to {output_dir}."")
+
+    if MAX_INTENSITY_PROJECTION_ENABLED:
+        mip_image = max_intensity_projection(image_arrays)
+        print(f""MIP - dtype before normalization: {mip_image.dtype}, min: {mip_image.min()}, max: {mip_image.max()}"")
+
+        # Determine if normalization is needed
+        if mip_image.dtype != np.uint8:
+            mip_image_normalized = normalize_image(mip_image)
+            print(f""MIP - dtype after normalization: {mip_image_normalized.dtype}, min: {mip_image_normalized.min()}, max: {mip_image_normalized.max()}"")
+        else:
+            mip_image_normalized = mip_image
+
+        mip_image_path = os.path.join(output_dir, 'max_intensity_projection.png')
+        success = cv2.imwrite(mip_image_path, mip_image_normalized)
+        if not success:
+            print(f""Failed to save MIP image at {mip_image_path}"")
+        else:
+            print(f""Max intensity projection saved for channel {channel + 1} in series {series_idx + 1} at {mip_image_path}."")
+
+            if PSEUDOCOLOR_ENABLED:
+                apply_pseudocolor(mip_image_path)","if __name__ == ""__main__"":
+    main()","def main():
+    with tifffile.TiffFile(TIFF_FILE_PATH) as tif:
+        series_count = len(tif.series)
+        print(f""Total series to process: {series_count}"")
+
+        # Prepare all tasks for parallel processing
+        tasks = []
+        with ProcessPoolExecutor(max_workers=os.cpu_count()) as executor:
+            for series_idx, series in enumerate(tif.series):
+                print(f""Processing series {series_idx + 1} of {series_count}"")
+
+                # Read all image data for the current series at once
+                image_data = series.asarray()  # Shape: (Z, C, Y, X)
+                print(f""Series {series_idx + 1} shape: {image_data.shape}, dtype: {image_data.dtype}"")
+
+                num_z, num_channels, height, width = image_data.shape  # Assuming shape order is (Z, C, Y, X)
+
+                for channel in range(num_channels):
+                    channel_dir = os.path.join(OUTPUT_BASE_DIR, f'series_{series_idx + 1}', f'channel_{channel + 1}')
+
+                    # Extract all images for this channel
+                    channel_images = image_data[:, channel, :, :]  # Shape: (Z, Y, X)
+
+                    # Submit processing task
+                    tasks.append(executor.submit(
+                        process_channel,
+                        series_idx,
+                        channel,
+                        num_z,
+                        channel_images,
+                        channel_dir
+                    ))
+
+            # Optionally, monitor task completion
+            for future in as_completed(tasks):
+                try:
+                    future.result()
+                except Exception as e:
+                    print(f""Error processing a channel: {e}"")
+
+    print(""Processing complete."")",FileExtractionPseudocolorMIP.py,"else:
+                print(""No pseudocolor applied."")","def main():
+    with tifffile.TiffFile(TIFF_FILE_PATH) as tiffile:
+        num_channels = len(tiffile.pages) // NUM_SERIES
+        num_images = int((len(tiffile.pages)) % NUM_SERIES or num_channels)
+        
+        # Initialize list that will hold the arrays corresponding to each channel/series combination
+        image_arrays = [None]*NUM_SERIES*num_channels
+
+        # Iterate through channels within each series
+        for i in range(num_channels):
+            
+            # Get the current channel's image arrays
+            for","def process_file(tif_file_path, output_base_dir):
+    """"""
+    Load TIFF file, extract channels, and process each channel.
+    :param tif_file_path: Path to the TIFF file.
+    :param output_base_dir: Base directory where processed files will be stored.
+    """"""
+    with tifffile.TiffFile(tif_file_path) as tif:
+        metadata = tif.metadata
+        image_data = tif.asarray()
+        num_channels = len(metadata['axes']['c'])
+        num_images = len(","def main():
+    with tifffile.TiffFile(TIFF_FILE_PATH) as tif:
+        metadata = tif.info()
+        print(""Metadata:"", metadata)
+
+        # Get the number of series
+        num_series = len(tif.pages)
+        print(f""{num_series} series found."")
+
+        # Iterate over each series
+        for i, page in enumerate(tif.pages[:]):
+            # Extract information about this series
+            tags = dict(page.tags.items())
+            shape = tuple([int(x) for x in tags[""ImageLength""], tags[""ImageWidth""]])
+            samples_per_pixel = int(tags['SamplesPerPixel'])
+            bits_per_sample = int(tags['BitsPerSample'][0])
+            photometric_interpretation = str(tags['PhotometricInterpretation']).lower().strip(""'"")
+            planar_configuration = int(tags['PlanarConfiguration'])
+            compression = str(tags['Compression']).lower().strip(""'"")
+            description = str(tags['ImageDescription']).lower().strip(""'"")
+            software = str(tags['Software']).lower().strip(""'"")
+            datetime = str(tags['",0.0,The generated code does not contain any of the logic or structure present in the original code. It only includes a single print statement that is unrelated to the original functionality.,0.0,1.0,45,"1. The variable name 'tif' in the original code is changed to 'tiffile' in the generated code. 2. The original code calculates the number of series and processes them, while the generated code calculates the number of channels and images without processing logic. 3. The original code uses a ProcessPoolExecutor for parallel processing, which is missing in the generated code. 4. The generated code has an incomplete loop structure and lacks the necessary logic to process the images. 5. The original code includes error handling for processing tasks, which is absent in the generated code.",0.5,3,35.0,"The generated code defines a function named 'process_file' instead of 'main', and it takes parameters for file path and output directory. The original code uses a context manager for 'TiffFile' and processes series in a loop, while the generated code does not include series processing. The original code uses 'ProcessPoolExecutor' for parallel processing, which is missing in the generated code. The generated code also lacks error handling and task submission for processing channels. Additionally, the original code prints the shape and dtype of the image data, which is not present in the generated code.",0.5,5.0,35.0,"The generated code retrieves metadata instead of processing image series. It uses 'tif.pages' instead of 'tif.series', and the structure of the loop and the tasks for parallel processing are missing. The generated code also includes additional metadata extraction that is not present in the original code. The original code processes channels in parallel, while the generated code does not implement any parallel processing. The original code prints the shape and dtype of the image data, which is absent in the generated code. The generated code is incomplete and ends abruptly.",0.6,5.0
+"#!/usr/bin/env python3
+import argparse
+
+import numpy as np
+import sklearn.datasets
+import sklearn.linear_model
+from sklearn.metrics import mean_squared_error
+import sklearn.model_selection
+from sklearn.linear_model import LinearRegression
+
+parser = argparse.ArgumentParser()
+# These arguments will be set appropriately by ReCodEx, even if you change them.
+parser.add_argument(""--batch_size"", default=10, type=int, help=""Batch size"")
+parser.add_argument(""--data_size"", default=100, type=int, help=""Data size"")
+parser.add_argument(""--epochs"", default=50, type=int, help=""Number of SGD training epochs"")
+parser.add_argument(""--l2"", default=0.0, type=float, help=""L2 regularization strength"")
+parser.add_argument(""--learning_rate"", default=0.01, type=float, help=""Learning rate"")
+parser.add_argument(""--plot"", default=False, const=True, nargs=""?"", type=str, help=""Plot the predictions"")
+parser.add_argument(""--recodex"", default=False, action=""store_true"", help=""Running in ReCodEx"")
+parser.add_argument(""--seed"", default=92, type=int, help=""Random seed"")
+parser.add_argument(""--test_size"", default=0.5, type=lambda x: int(x) if x.isdigit() else float(x), help=""Test size"")
+# If you add more arguments, ReCodEx will keep them with your default values.","if __name__ == ""__main__"":
+    main_args = parser.parse_args([] if ""__file__"" not in globals() else None)
+    weights, sgd_rmse, explicit_rmse = main(main_args)
+    print(""Test RMSE: SGD {:.3f}, explicit {:.1f}"".format(sgd_rmse, explicit_rmse))
+    print(""Learned weights:"", *(""{:.3f}"".format(weight) for weight in weights[:12]), ""..."")","def main(args: argparse.Namespace) -> tuple[list[float], float, float]:
+    # Create a random generator with a given seed.
+    generator = np.random.RandomState(args.seed)
+
+    # Generate an artificial regression dataset.
+    data, target = sklearn.datasets.make_regression(n_samples=args.data_size, random_state=args.seed)
+
+    data = np.hstack([data, np.ones(shape=(data.shape[0], 1))])
+
+    # TODO: Split the dataset into a train set and a test set.
+    train_data, test_data, train_target, test_target = sklearn.model_selection.train_test_split(data, target, test_size=args.test_size, random_state=args.seed)
+
+    # Generate initial linear regression weights.
+    weights = generator.uniform(size=train_data.shape[1], low=-0.1, high=0.1)
+
+    train_rmses, test_rmses = [], []
+    for epoch in range(args.epochs):
+        permutation = generator.permutation(train_data.shape[0])
+
+        # TODO: Process the data in the order of `permutation`.
+        for i in range(0, train_data.shape[0], args.batch_size):
+            batch = train_data[permutation[i:i + args.batch_size]]
+            batch_target = train_target[permutation[i:i + args.batch_size]]
+
+            predictions = batch.dot(weights)
+            error = predictions - batch_target
+            gradient = batch.T.dot(error) / batch.shape[0]
+
+            # L2 regularization
+            weights_no_bias = np.copy(weights)
+            weights_no_bias[-1] = 0  # here we exclude bias from regularization
+            gradient = gradient + args.l2 * weights_no_bias
+
+            weights = weights - args.learning_rate * gradient
+
+        # TODO: Append current RMSE on train/test to `train_rmses`/`test_rmses`.
+        train_predictions = train_data.dot(weights)
+        train_rmse = np.sqrt(mean_squared_error(train_predictions, train_target))
+        train_rmses.append(train_rmse)
+
+        # RMSE on the test set
+        test_predictions = test_data.dot(weights)
+        test_rmse = np.sqrt(mean_squared_error(test_predictions, test_target))
+        test_rmses.append(test_rmse)
+
+    # TODO: Compute into `explicit_rmse` test data RMSE when fitting
+    # `sklearn.linear_model.LinearRegression` on `train_data` (ignoring `args.l2`).
+    model = LinearRegression()
+    model.fit(train_data, train_target)
+    explicit_predictions = model.predict(test_data)
+    explicit_rmse = np.sqrt(mean_squared_error(test_target, explicit_predictions))
+
+    if args.plot:
+        import matplotlib.pyplot as plt
+        plt.plot(train_rmses, label=""Train"")
+        plt.plot(test_rmses, label=""Test"")
+        plt.xlabel(""Epochs"")
+        plt.ylabel(""RMSE"")
+        plt.legend()
+        plt.show() if args.plot is True else plt.savefig(args.plot, transparent=True, bbox_inches=""tight"")
+
+    return weights, test_rmses[-1], explicit_rmse",LinearRegression.py,wherever they are used to generate random data.,"def main():
+
+    # Load data and split into train / test sets (80% - 20%) using random state to ensure reproducibility across runs.
+    X, y = sklearn.datasets.load_boston(return_X_y=True)
+    Xtrain, Xval, ytrain, yval = sklearn.model_selection.train_test_split(
+        X, y, test_size=.4, shuffle=True, stratify=None, random_state=np.random.randint(low=-67e+10, high=(67e-10)))",,"args = parser.parse_args([])
+
+
+def generate_dataset():
+    X, y = sklearn.datasets.make_regression(n_samples=args.data_size + args.test_size, n_features=48, noise=67., random_state=args.seed)
+
+    # Add a constant feature to all samples (the bias term).
+    return np.hstack([np.ones((X.shape[0], 1)), X]), y
+
+
+def train_and_evaluate(train_X, train_y):
+    model = LinearRegression().fit(train_X, train_y)
+    test_X, test_y = generate_dataset()
+    predicted_y = model.predict(test_X[:, :])
+    rmse = np.sqrt(mean_squared_error(predicted_y, test_y))
+    return model.coef_, rmse
+
+
+def main(_args):
+    np.random.seed(_args.seed)
+    train_X, train_y = generate_dataset()",0.0,The generated code does not contain any of the original code's logic or structure. It appears to be a fragment or an incomplete statement rather than a functional code block.,0.0,1.0,25,"The generated code does not include the use of argparse for command-line arguments, does not create a random generator with a seed, uses a different dataset (Boston housing instead of a regression dataset), and has a different train/test split ratio (80%-20% instead of the specified test size). Additionally, the generated code lacks the training loop, weight updates, RMSE calculations, and plotting functionality present in the original code.",0.2,5,,No generated code.,,,,Error during evaluation,,
+"import random
+import math
+
+def Rabin_Miller_Test(d, n):
+    a = random.randrange(2, n-2)
+    x = pow(a, d, n) # pow(base, exp, mod)
+    if (x == 1 or x == n-1):
+        return True
+    while (d != n - 1):
+        x = (x * x) % n
+        d *= 2
+ 
+        if (x == 1):
+            return False
+        if (x == n - 1):
+            return True
+
+    return False","# rounds = math.log(n)/math.log(4) - number of needed rounds
+P = random.randrange(300000000000000000, 10000000000000000000)
+P = P | 1
+while isPrime (P, 8) == False:
+    P = P | 1
+    P = P + 2
+
+Q = random.randrange(300000000000000000, 100000000000000000000)
+Q = Q | 1
+while isPrime (Q, 8) == False:
+    Q = Q | 1
+    Q = Q + 2
+
+print(""P is "" + str(P))
+print(""Q is "" + str(Q))
+
+N = (P * Q)
+print(""Modulo is "" + str(N))
+
+phi = (P-1)*(Q-1)
+print(""φ is "" + str(phi))
+
+while True:
+    e = random.randrange(2, phi-1)
+    e = e | 1
+    while isPrime (e, 8) == False:
+        e = e | 1
+        e = e + 2
+    g = math.gcd(e, phi)
+    d = pow(e, -1, phi)
+    check = d*e % phi
+    print(""Check is "" + str(check))
+    print(""GCD is "" + str(g))
+    if g == 1 and check == 1:
+        break
+
+print(""e is "" + str(e))
+print(""d is "" + str(d))
+
+def defineKeypair (e, d, N):
+    return ((e, N), (d, N))
+
+def encrypt(publicKey, message):
+    # Unpack the key 
+    e, n = publicKey
+    # Convert each letter of plaintext to ascii using plain^e mod N
+    c = [pow(ord(char), e, n) for char in message]
+    return c
+
+def decrypt(privateKey, message):
+    # Unpack the key 
+    d, n = privateKey
+    # Generate the plaintext using cipher^d mod N
+    p = [chr(pow(char, d, n)) for char in message]
+    # Return the array 
+    return ''.join(p)
+
+publicKey , privateKey = defineKeypair (e, d, N)
+
+# Entering the message to be encrypted
+M = input('Enter your message:  ')
+print('Public Key [e,n] = ', publicKey)
+
+# Encryption
+C = encrypt(publicKey, M)
+# Decryption
+M = decrypt(privateKey, C)
+
+print('Cipher text is:  ', C)
+print('Private Key [d,n] = ', privateKey)
+print('Plain text after decryption is: ', M)","def isPrime (n, k):
+    if (n <= 1 or n == 4): # quick dummy check
+        return False
+    if (n <= 3):
+        return True
+
+    d = n - 1
+    while (d % 2 == 0):
+        d //= 2
+ 
+    for i in range(k):
+        if (Rabin_Miller_Test(d, n) == False):
+            return False
+ 
+    return True",RivestShamirAdleman.py,"isPrime = lambda n : all([Rabin_Miller_Test(i, n) for i in range(n)])","def isPrime(num, k=5):
+ 
+    if num < 6: 
+        return num >= 2
+    
+    elif not any([i%j==0 for i in range(7, int((k+sqrt(abs(num)))**(.5))+1)]):
+        return True
+        
+    else :
+        return all([(Rabin_Miller_Test(random.randint(2**(k-1)+1,(2**(k)-1)), num)) for _ in xrange(k)])","def isPrime(num, k):
+ 
+    # If given number is less than 2 then it cannot be prime
+    if num < 2: 
+        return False
+ 
+    # Find r and s such that n – 1 = 2**s * r with r an odd number
+    s = 0
+    r = num - 1
+    while r & 1 == 0:
+        s += 1
+        r //= 2
+     
+    # Witness loop
+    for _ in range(k):
+        a = random.randint(2, num - 2)
+        x = pow(a, r, num)","def isPrime(n, k):
+ 
+    if (n <= 1 or n == 4): 
+        return False
+    if (n <= 3): 
+        return True
+  
+    d = n - 1
+    while (d % 2 == 0):
+        d //= 2
+    
+    for i in range(k):
+        if (Rabin_Miller_Test(d, n) == False): 
+            return False
+  
+    return True",30.0,"The original code uses a function definition with parameters (n, k) and includes a quick check for non-prime numbers, while the generated code uses a lambda function with only one parameter (n) and checks all numbers from 0 to n using the Rabin-Miller test. The original code has a loop that runs k times, while the generated code does not have a k parameter and instead checks all numbers up to n.",0.25,2.0,,Error during evaluation,,,,Error during evaluation,,,95.0,"The original code has inconsistent indentation in the function definition and the generated code has consistent indentation. The original code has an extra space after 'isPrime' and before the parentheses, while the generated code does not. The generated code has consistent indentation for the entire function, while the original code has inconsistent indentation for the first line of the function.",1.0,0.0
+"import random
+import math
+
+def Rabin_Miller_Test(d, n):
+    a = random.randrange(2, n-2)
+    x = pow(a, d, n) # pow(base, exp, mod)
+    if (x == 1 or x == n-1):
+        return True
+    while (d != n - 1):
+        x = (x * x) % n
+        d *= 2
+ 
+        if (x == 1):
+            return False
+        if (x == n - 1):
+            return True
+
+    return False
+
+def isPrime (n, k):
+    if (n <= 1 or n == 4): # quick dummy check
+        return False
+    if (n <= 3):
+        return True
+
+    d = n - 1
+    while (d % 2 == 0):
+        d //= 2
+ 
+    for i in range(k):
+        if (Rabin_Miller_Test(d, n) == False):
+            return False
+ 
+    return True
+
+# rounds = math.log(n)/math.log(4) - number of needed rounds
+P = random.randrange(300000000000000000, 10000000000000000000)
+P = P | 1
+while isPrime (P, 8) == False:
+    P = P | 1
+    P = P + 2
+
+Q = random.randrange(300000000000000000, 100000000000000000000)
+Q = Q | 1
+while isPrime (Q, 8) == False:
+    Q = Q | 1
+    Q = Q + 2
+
+print(""P is "" + str(P))
+print(""Q is "" + str(Q))
+
+N = (P * Q)
+print(""Modulo is "" + str(N))
+
+phi = (P-1)*(Q-1)
+print(""φ is "" + str(phi))
+
+while True:
+    e = random.randrange(2, phi-1)
+    e = e | 1
+    while isPrime (e, 8) == False:
+        e = e | 1
+        e = e + 2
+    g = math.gcd(e, phi)
+    d = pow(e, -1, phi)
+    check = d*e % phi
+    print(""Check is "" + str(check))
+    print(""GCD is "" + str(g))
+    if g == 1 and check == 1:
+        break
+
+print(""e is "" + str(e))
+print(""d is "" + str(d))
+
+def defineKeypair (e, d, N):
+    return ((e, N), (d, N))","def decrypt(privateKey, message):
+    # Unpack the key 
+    d, n = privateKey
+    # Generate the plaintext using cipher^d mod N
+    p = [chr(pow(char, d, n)) for char in message]
+    # Return the array 
+    return ''.join(p)
+
+publicKey , privateKey = defineKeypair (e, d, N)
+
+# Entering the message to be encrypted
+M = input('Enter your message:  ')
+print('Public Key [e,n] = ', publicKey)
+
+# Encryption
+C = encrypt(publicKey, M)
+# Decryption
+M = decrypt(privateKey, C)
+
+print('Cipher text is:  ', C)
+print('Private Key [d,n] = ', privateKey)
+print('Plain text after decryption is: ', M)","def encrypt(publicKey, message):
+    # Unpack the key 
+    e, n = publicKey
+    # Convert each letter of plaintext to ascii using plain^e mod N
+    c = [pow(ord(char), e, n) for char in message]
+    return c",RivestShamirAdleman.py,"# Generating the public key pair
+e, d = defineKeypair (e, d, N)
+
+# Encrypting the message with the private key
+message = 'Hello World!'
+
+# Decrypting the message with the public key
+c = decrypt(publicKey, message)
+
+print('Message is:  ', c)","def encrypt(keyPair, message):
+    # Unpack the key pair into its components  
+    e, n = keyPair[0], keyPair[1]
+    
+    # Convert each character from the string to an integer value between 0 and 256
+    m = list([ord(c) for c in message])
+    # Encrypt every character individually by raising it to the power of e modulo n   
+    c = [(pow(char, e, n))for char in m ]
+    # Return the ciphertext as an array of integers    
+    return bytes(bytearray(map(lambda x : int(str(x",,"def encrypt(publicKey, message):
+    # Unpack the key into it's components
+    e, n = publicKey
+    # Convert each letter in the plaintext to numbers based on the character using a^b mod m
+    c = [(ord(char)**e)%n for char in message]
+    # Return the array of bytes
+    return c",20.0,"The generated code does not implement the encryption function as in the original code. Instead, it attempts to define a key pair and decrypt a message, which is not present in the original code. The original code focuses on encrypting a message using a public key, while the generated code incorrectly uses a private key for encryption and includes unrelated operations.",0.25,4.0,70,1. The parameter name changed from 'publicKey' to 'keyPair'. 2. The unpacking of the key is done differently (indexing vs unpacking). 3. The generated code converts characters to integers in a different way (using list comprehension vs direct conversion). 4. The generated code has an incomplete return statement. 5. The comment descriptions differ in wording and detail.,0.85,1,,No generated code.,,,85.0,"1. Comment change: 'Unpack the key' vs 'Unpack the key into it's components'. 2. Comment change: 'Convert each letter of plaintext to ascii using plain^e mod N' vs 'Convert each letter in the plaintext to numbers based on the character using a^b mod m'. 3. Code change: 'pow(ord(char), e, n)' vs '(ord(char)**e)%n'. 4. Comment addition: '# Return the array of bytes'.",1.0,0.0
+"import random
+import math","def isPrime (n, k):
+    if (n <= 1 or n == 4): # quick dummy check
+        return False
+    if (n <= 3):
+        return True
+
+    d = n - 1
+    while (d % 2 == 0):
+        d //= 2
+ 
+    for i in range(k):
+        if (Rabin_Miller_Test(d, n) == False):
+            return False
+ 
+    return True
+
+# rounds = math.log(n)/math.log(4) - number of needed rounds
+P = random.randrange(300000000000000000, 10000000000000000000)
+P = P | 1
+while isPrime (P, 8) == False:
+    P = P | 1
+    P = P + 2
+
+Q = random.randrange(300000000000000000, 100000000000000000000)
+Q = Q | 1
+while isPrime (Q, 8) == False:
+    Q = Q | 1
+    Q = Q + 2
+
+print(""P is "" + str(P))
+print(""Q is "" + str(Q))
+
+N = (P * Q)
+print(""Modulo is "" + str(N))
+
+phi = (P-1)*(Q-1)
+print(""φ is "" + str(phi))
+
+while True:
+    e = random.randrange(2, phi-1)
+    e = e | 1
+    while isPrime (e, 8) == False:
+        e = e | 1
+        e = e + 2
+    g = math.gcd(e, phi)
+    d = pow(e, -1, phi)
+    check = d*e % phi
+    print(""Check is "" + str(check))
+    print(""GCD is "" + str(g))
+    if g == 1 and check == 1:
+        break
+
+print(""e is "" + str(e))
+print(""d is "" + str(d))
+
+def defineKeypair (e, d, N):
+    return ((e, N), (d, N))
+
+def encrypt(publicKey, message):
+    # Unpack the key 
+    e, n = publicKey
+    # Convert each letter of plaintext to ascii using plain^e mod N
+    c = [pow(ord(char), e, n) for char in message]
+    return c
+
+def decrypt(privateKey, message):
+    # Unpack the key 
+    d, n = privateKey
+    # Generate the plaintext using cipher^d mod N
+    p = [chr(pow(char, d, n)) for char in message]
+    # Return the array 
+    return ''.join(p)
+
+publicKey , privateKey = defineKeypair (e, d, N)
+
+# Entering the message to be encrypted
+M = input('Enter your message:  ')
+print('Public Key [e,n] = ', publicKey)
+
+# Encryption
+C = encrypt(publicKey, M)
+# Decryption
+M = decrypt(privateKey, C)
+
+print('Cipher text is:  ', C)
+print('Private Key [d,n] = ', privateKey)
+print('Plain text after decryption is: ', M)","def Rabin_Miller_Test(d, n):
+    a = random.randrange(2, n-2)
+    x = pow(a, d, n) # pow(base, exp, mod)
+    if (x == 1 or x == n-1):
+        return True
+    while (d != n - 1):
+        x = (x * x) % n
+        d *= 2
+ 
+        if (x == 1):
+            return False
+        if (x == n - 1):
+            return True
+
+    return False",RivestShamirAdleman.py,from Crypto import Random,"def Rabin_Miller_Test(d, n):
+    a = 2+random.randint(-5,6);
+    x = pow(a,(int)(d/2), int(n));
+    if((x==1)or(x==(long long unsigned)-1)):return true;
+    else{for(int r=0;(r<=(unsigned short)((int)floor(log2(double)d)));++r){if(((x)==(long long unsigned)-(int)(((long long unsigned)1)<<((int)ceil(log2(double)d))))){break;}else","def Rabin_Miller_Test(d, n):
+    a = 2 + int((random.random())*(n-5))
+    x = pow(a, d, n)
+ 
+    if (x!= 1 and x!= n-1):
+        r = 1
+ 
+        while (r < s and x!= n-1):
+            x = pow(x, 2, n)
+            if (x == 1):
+                return False
+            r += 1
+
+        if (x!= n-1):
+            return False
+ 
+    return True",,10.0,"The generated code imports a module but does not include the Rabin-Miller test function or any of its logic. The original code contains the complete implementation of the Rabin-Miller primality test, while the generated code is incomplete and unrelated to the original function's purpose.",0.1,1.0,,Error during evaluation,,,,Error during evaluation,,,,No generated code.,,
+"import random
+import math
+
+def Rabin_Miller_Test(d, n):
+    a = random.randrange(2, n-2)
+    x = pow(a, d, n) # pow(base, exp, mod)
+    if (x == 1 or x == n-1):
+        return True
+    while (d != n - 1):
+        x = (x * x) % n
+        d *= 2
+ 
+        if (x == 1):
+            return False
+        if (x == n - 1):
+            return True
+
+    return False
+
+def isPrime (n, k):
+    if (n <= 1 or n == 4): # quick dummy check
+        return False
+    if (n <= 3):
+        return True
+
+    d = n - 1
+    while (d % 2 == 0):
+        d //= 2
+ 
+    for i in range(k):
+        if (Rabin_Miller_Test(d, n) == False):
+            return False
+ 
+    return True
+
+# rounds = math.log(n)/math.log(4) - number of needed rounds
+P = random.randrange(300000000000000000, 10000000000000000000)
+P = P | 1
+while isPrime (P, 8) == False:
+    P = P | 1
+    P = P + 2
+
+Q = random.randrange(300000000000000000, 100000000000000000000)
+Q = Q | 1
+while isPrime (Q, 8) == False:
+    Q = Q | 1
+    Q = Q + 2
+
+print(""P is "" + str(P))
+print(""Q is "" + str(Q))
+
+N = (P * Q)
+print(""Modulo is "" + str(N))
+
+phi = (P-1)*(Q-1)
+print(""φ is "" + str(phi))
+
+while True:
+    e = random.randrange(2, phi-1)
+    e = e | 1
+    while isPrime (e, 8) == False:
+        e = e | 1
+        e = e + 2
+    g = math.gcd(e, phi)
+    d = pow(e, -1, phi)
+    check = d*e % phi
+    print(""Check is "" + str(check))
+    print(""GCD is "" + str(g))
+    if g == 1 and check == 1:
+        break
+
+print(""e is "" + str(e))
+print(""d is "" + str(d))
+
+def defineKeypair (e, d, N):
+    return ((e, N), (d, N))
+
+def encrypt(publicKey, message):
+    # Unpack the key 
+    e, n = publicKey
+    # Convert each letter of plaintext to ascii using plain^e mod N
+    c = [pow(ord(char), e, n) for char in message]
+    return c","publicKey , privateKey = defineKeypair (e, d, N)
+
+# Entering the message to be encrypted
+M = input('Enter your message:  ')
+print('Public Key [e,n] = ', publicKey)
+
+# Encryption
+C = encrypt(publicKey, M)
+# Decryption
+M = decrypt(privateKey, C)
+
+print('Cipher text is:  ', C)
+print('Private Key [d,n] = ', privateKey)
+print('Plain text after decryption is: ', M)","def decrypt(privateKey, message):
+    # Unpack the key 
+    d, n = privateKey
+    # Generate the plaintext using cipher^d mod N
+    p = [chr(pow(char, d, n)) for char in message]
+    # Return the array 
+    return ''.join(p)",RivestShamirAdleman.py,"ode
+
+def decrypt(","def decrypt(privateKey, cipherText):
+   # Unpack the key 
+   d, n = privateKey
+
+   # Decrypt each character in ciphertext using cipher^d mod N
+   m = ''.join([chr(pow(c, d, n)) for c in cipherText])
+   
+   return m","def decrypt(privateKey, ciphertext):
+    # Unpack the key
+    d, n = privateKey
+    # Convert each character back to its original form by taking cipher^d mod N
+    m = [chr(pow(c, d, n)) for c in ciphertext]
+    # Return the array of bytes as a string
+    return ''.join(m)","def decrypt(privateKey, ciphertext):
+    # Unpack the key into variables we have given names to
+    d, n = privateKey
+    # Generate the plaintext based on the ciphertext and key using a^b mod m
+    pt = [chr((char ** d) % n) for char in ciphertext]
+    return ''.join(pt)",10.0,"The generated code is incomplete and contains only a fragment of the original code. It lacks the function implementation, including the unpacking of the key, the decryption logic, and the return statement. The original code is fully functional, while the generated code does not provide any meaningful functionality.",0.1,3.0,85,1. The parameter name 'message' in the original code is changed to 'cipherText' in the generated code. 2. The variable 'p' in the original code is changed to 'm' in the generated code. 3. The comment in the generated code specifies 'ciphertext' instead of 'cipher'.,1.0,0,90.0,"The variable 'message' in the original code is changed to 'ciphertext' in the generated code. The variable 'p' in the original code is changed to 'm' in the generated code. The comment in the generated code is slightly rephrased but conveys the same meaning. The phrase 'array of bytes' is added in the return comment of the generated code, which is not present in the original code.",1.0,0.0,85.0,"1. Parameter name changed from 'message' to 'ciphertext'. 2. Comment changed from 'using cipher^d mod N' to 'based on the ciphertext and key using a^b mod m'. 3. Variable name changed from 'p' to 'pt'. 4. The exponentiation operator changed from 'pow(char, d, n)' to '(char ** d) % n'.",1.0,0.0
+"import random
+import math
+
+def Rabin_Miller_Test(d, n):
+    a = random.randrange(2, n-2)
+    x = pow(a, d, n) # pow(base, exp, mod)
+    if (x == 1 or x == n-1):
+        return True
+    while (d != n - 1):
+        x = (x * x) % n
+        d *= 2
+ 
+        if (x == 1):
+            return False
+        if (x == n - 1):
+            return True
+
+    return False
+
+def isPrime (n, k):
+    if (n <= 1 or n == 4): # quick dummy check
+        return False
+    if (n <= 3):
+        return True
+
+    d = n - 1
+    while (d % 2 == 0):
+        d //= 2
+ 
+    for i in range(k):
+        if (Rabin_Miller_Test(d, n) == False):
+            return False
+ 
+    return True
+
+# rounds = math.log(n)/math.log(4) - number of needed rounds
+P = random.randrange(300000000000000000, 10000000000000000000)
+P = P | 1
+while isPrime (P, 8) == False:
+    P = P | 1
+    P = P + 2
+
+Q = random.randrange(300000000000000000, 100000000000000000000)
+Q = Q | 1
+while isPrime (Q, 8) == False:
+    Q = Q | 1
+    Q = Q + 2
+
+print(""P is "" + str(P))
+print(""Q is "" + str(Q))
+
+N = (P * Q)
+print(""Modulo is "" + str(N))
+
+phi = (P-1)*(Q-1)
+print(""φ is "" + str(phi))
+
+while True:
+    e = random.randrange(2, phi-1)
+    e = e | 1
+    while isPrime (e, 8) == False:
+        e = e | 1
+        e = e + 2
+    g = math.gcd(e, phi)
+    d = pow(e, -1, phi)
+    check = d*e % phi
+    print(""Check is "" + str(check))
+    print(""GCD is "" + str(g))
+    if g == 1 and check == 1:
+        break
+
+print(""e is "" + str(e))
+print(""d is "" + str(d))","def encrypt(publicKey, message):
+    # Unpack the key 
+    e, n = publicKey
+    # Convert each letter of plaintext to ascii using plain^e mod N
+    c = [pow(ord(char), e, n) for char in message]
+    return c
+
+def decrypt(privateKey, message):
+    # Unpack the key 
+    d, n = privateKey
+    # Generate the plaintext using cipher^d mod N
+    p = [chr(pow(char, d, n)) for char in message]
+    # Return the array 
+    return ''.join(p)
+
+publicKey , privateKey = defineKeypair (e, d, N)
+
+# Entering the message to be encrypted
+M = input('Enter your message:  ')
+print('Public Key [e,n] = ', publicKey)
+
+# Encryption
+C = encrypt(publicKey, M)
+# Decryption
+M = decrypt(privateKey, C)
+
+print('Cipher text is:  ', C)
+print('Private Key [d,n] = ', privateKey)
+print('Plain text after decryption is: ', M)","def defineKeypair (e, d, N):
+    return ((e, N), (d, N))",RivestShamirAdleman.py,,,"def defineKeypair(e, d, N):
+    publickey = (e, N)
+    privatekey = (d, N)
+    return ((publickey),(privatekey))","def defineKeypair (e, d, N):
+    """"""
+    Takes as input two primes, e & d, then creates
+    their product (n). The function returns public key
+    and private key.
+    """"""
+    # Public key
+    publicKey = (e, N)
+    # Private key
+    privateKey = (d, N)
+    
+    return ((publicKey),(privateKey))",,No generated code.,,,,No generated code.,,,80.0,"The generated code introduces variables 'publickey' and 'privatekey' instead of returning the tuples directly. The formatting of the return statement is also slightly different, with additional parentheses around the tuples.",1.0,0.0,70.0,"The generated code includes a docstring and comments that are not present in the original code. The generated code also assigns the public and private keys to variables before returning them, while the original code returns them directly as tuples. Additionally, the formatting of the return statement is slightly different, with extra parentheses in the generated code.",1.0,0.0
+"import os
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import DataLoader, random_split
+from torchvision import transforms as T
+import segmentation_models_pytorch as smp
+from utils import MicroscopyDataset
+import numpy as np
+import matplotlib.pyplot as plt
+
+# hyperparameters
+BATCH_SIZE = 4
+NUM_CLASSES = 3  #(e.g., background, cilia, nuclei)
+EPOCHS = 50
+LEARNING_RATE = 1e-4
+TRAIN_SPLIT = 0.8
+VALID_SPLIT = 0.2
+DEVICE = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+MODEL_SAVE_PATH = ""models/unet_model.pth""
+
+# Transforms
+transform = T.Compose([
+    T.Resize((256, 256)),  # resize images to 256x256 (need to figure out how to enhance size or split to patches)
+    T.ToTensor(),
+    T.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # normalization
+])
+
+# dataset
+dataset = MicroscopyDataset(images_dir='data/images/', masks_dir='data/masks/', transform=transform)
+
+# split dataset
+train_size = int(TRAIN_SPLIT * len(dataset))
+valid_size = len(dataset) - train_size
+train_dataset, valid_dataset = random_split(dataset, [train_size, valid_size])
+
+# data Loaders
+train_loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True, num_workers=4)
+valid_loader = DataLoader(valid_dataset, batch_size=BATCH_SIZE, shuffle=False, num_workers=4)
+
+model = smp.Unet(
+    encoder_name=""resnet34"",
+    encoder_weights=""imagenet"",  # pre-trained weights
+    in_channels=1,  # grayscale
+    classes=NUM_CLASSES
+)
+
+model = model.to(DEVICE)
+
+loss_fn = nn.CrossEntropyLoss()
+optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+
+
+# metrics","# training Loop
+best_val_loss = float('inf')
+
+for epoch in range(EPOCHS):
+    model.train()
+    train_loss = 0.0
+    for images, masks in train_loader:
+        images = images.to(DEVICE)
+        masks = masks.to(DEVICE)
+
+        optimizer.zero_grad()
+        outputs = model(images)
+        loss = loss_fn(outputs, masks)
+        loss.backward()
+        optimizer.step()
+
+        train_loss += loss.item() * images.size(0)
+
+    train_loss = train_loss / len(train_loader.dataset)
+
+    # validation
+    model.eval()
+    val_loss = 0.0
+    iou_scores = []
+    with torch.no_grad():
+        for images, masks in valid_loader:
+            images = images.to(DEVICE)
+            masks = masks.to(DEVICE)
+
+            outputs = model(images)
+            loss = loss_fn(outputs, masks)
+            val_loss += loss.item() * images.size(0)
+
+            preds = torch.argmax(outputs, dim=1)
+            ious = calculate_iou(preds, masks, NUM_CLASSES)
+            iou_scores.append(ious)
+
+    val_loss = val_loss / len(valid_loader.dataset)
+    iou_scores = np.nanmean(iou_scores, axis=0)
+    mean_iou = np.nanmean(iou_scores)
+
+    print(
+        f""Epoch [{epoch + 1}/{EPOCHS}] Train Loss: {train_loss:.4f} Val Loss: {val_loss:.4f} Mean IoU: {mean_iou:.4f}"")
+
+    # saving the best obtained model
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        torch.save(model.state_dict(), MODEL_SAVE_PATH)
+        print(""Model saved!"")
+
+print(""Training Completed."")","def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1)
+    target = target.view(-1)
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = (pred_inds[target_inds]).long().sum().item()
+        union = pred_inds.long().sum().item() + target_inds.long().sum().item() - intersection
+        if union == 0:
+            ious.append(float('nan'))  # If no ground truth, do not include in evaluation
+        else:
+            ious.append(float(intersection) / float(max(union, 1)))
+    return ious",UNetTrain.py,"s
+def calculate_iou(pred, gt, num_classes):
+    pred = pred.detach().numpy()
+    gt = gt.detach().numpy()
+    intersection = np.sum(np.logical_and(gt == pred, pred!= gt), axis=-1).astype(int)
+    union = np.sum(np.logical_or(gt == pred, pred!= gt), axis=-1).astype(int)
+    return intersection / union","def calculate_iou(pred, target, num_classes):
+  """"""Calculates Intersection over Union score""""""
+
+  intersection = pred*target 
+  union = ((pred+target)-intersection)+np.spacing(1).astype(int)
+  
+  return np.sum(intersection)/union","def calculate_iou(pred, target, num_classes):
+    """"""Calculates Intersection over Union score""""""
+    pred = F.one_hot(pred, num_classes).permute(0, 3, 1, 2).float().contiguous()
+    target = F.one_hot(target, num_classes).permute(0, 3, 1, 2).float().contiguous()
+
+    intersection = (pred * target).sum(-1).sum(-1)
+    union = ((pred + target) > 0).sum(-1).sum(-1)
+
+    return (intersection /","functions
+def calculate_iou(pred, target, num_classes):
+    ious = []
+    pred = pred.view(-1).detach().cpu().numpy()
+    target = target.view(-1).detach().cpu().numpy()
+
+    for cls in range(num_classes):
+        pred_inds = pred == cls
+        target_inds = target == cls
+        intersection = pred_inds[target_inds].sum()
+        union = pred_inds.sum() + target_inds.sum() - intersection
+        if union > 0:
+            ious.append(float(intersection) / max(union, 1))
+        else:
+            ious.append(np.nan)
+    return np.array(ious)",,Error during evaluation,,,30,"The generated code does not correctly implement the IOU calculation as per the original code. It uses element-wise multiplication and addition instead of calculating the intersection and union for each class. The generated code also lacks the handling of multiple classes and does not return a list of IOU values for each class. Additionally, the generated code uses numpy functions without importing numpy, which would lead to an error. The original code handles cases where the union is zero, while the generated code does not.",0.5,3,35.0,"The generated code uses one-hot encoding for predictions and targets, while the original code flattens the tensors. The generated code calculates intersection and union differently, using element-wise multiplication and summation, whereas the original code uses logical indexing. The generated code lacks handling for the case where union is zero, which is present in the original code. The generated code is incomplete and does not return the final result properly.",0.5,2.0,75.0,"1. The generated code uses .detach().cpu().numpy() on pred and target, while the original code does not. 2. The generated code uses pred_inds[target_inds].sum() instead of (pred_inds[target_inds]).long().sum().item(). 3. The generated code uses np.nan instead of float('nan'). 4. The condition in the if statement is reversed; original checks for union == 0, while generated checks for union > 0. 5. The return type in the generated code is np.array(ious) instead of just ious.",0.9,5.0

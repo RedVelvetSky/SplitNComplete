@@ -13,13 +13,6 @@ warnings.filterwarnings('ignore')
 # df - data frame
 df = pd.read_csv("E:\Stuff\introai\\09-decision_tree_diabetes\diabetes_changed.csv")
 
-"""
-So, for example, if you look at the row for "Glucose":
-The number in the first column (99.00000) means that 25% of the people have glucose levels lower than 99.
-The number in the second column (117.0000) is the median, which means half of the people have glucose levels lower than 117 and half have higher.
-The number in the third column (140.25000) means that 75% of the people have glucose levels lower than 140.25.
-"""
-
 quantiles = df.iloc[:, :-1].quantile(q=[0.2, 0.5, 0.8], axis=0, numeric_only=True).T
 diabetes_distribution = df['Outcome'].value_counts() * 100 / len(df)
 print(f"\nPercentage of people with features lower than:\n{quantiles}")
@@ -66,10 +59,6 @@ X_train, X_test, Y_train, Y_test = train_test_split(x, y, test_size=0.4, random_
 model = DecisionTreeClassifier()
 kfold = KFold(n_splits=10)
 
-'''
-Cross-validation is a technique used in machine learning to assess the performance of a predictive model. It helps to evaluate how well the model will generalize to new, unseen data. The basic idea behind cross-validation is to split the dataset into multiple subsets, train the model on some of these subsets, and then evaluate its performance on the remaining subsets.
-'''
-
 # estimating accuracy
 cv_results = cross_val_score(model, x, y, cv = 10, scoring='accuracy')
 
@@ -96,7 +85,6 @@ param_grid = {
     'ccp_alpha': [0, .001, .005, .01, .05, .1]
 }
 
-print('\n')
 # GridSearchCV with the decision tree and the parameter grid
 grid_search = GridSearchCV(estimator=decision_tree, param_grid=param_grid, cv=10, scoring='accuracy', n_jobs=-1, verbose=1)
 
